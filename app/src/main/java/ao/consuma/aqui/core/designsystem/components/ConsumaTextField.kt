@@ -13,6 +13,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.stringResource
+import ao.consuma.aqui.R
 import ao.consuma.aqui.core.designsystem.theme.ConsumaAquiTheme
 
 @Composable
@@ -56,14 +58,14 @@ fun ConsumaSearchField(
     query: String,
     onQueryChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    placeholder: String = "Pesquisar...",
+    placeholder: String? = null,
     enabled: Boolean = true
 ) {
     ConsumaTextField(
         value = query,
         onValueChange = onQueryChange,
         modifier = modifier,
-        placeholder = placeholder,
+        placeholder = placeholder ?: stringResource(R.string.search_placeholder),
         leadingIcon = Icons.Default.Search,
         enabled = enabled,
         singleLine = true

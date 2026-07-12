@@ -8,8 +8,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import ao.consuma.aqui.core.designsystem.theme.ConsumaAquiTheme
+import ao.consuma.aqui.core.designsystem.tokens.ConsumaSpacing
 
 enum class ConsumaStatusSemantic {
     NEUTRAL, SUCCESS, WARNING, ERROR, INFO
@@ -56,7 +56,7 @@ fun ConsumaStatusChip(
         Text(
             text = text,
             style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+            modifier = Modifier.padding(horizontal = ConsumaSpacing.sm, vertical = ConsumaSpacing.xs)
         )
     }
 }

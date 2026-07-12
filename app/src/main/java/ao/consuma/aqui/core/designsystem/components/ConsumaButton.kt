@@ -18,7 +18,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import ao.consuma.aqui.R
 import ao.consuma.aqui.core.designsystem.theme.ConsumaAquiTheme
 import ao.consuma.aqui.core.designsystem.tokens.ConsumaSize
 import ao.consuma.aqui.core.designsystem.tokens.ConsumaSpacing
@@ -33,9 +36,10 @@ fun ConsumaPrimaryButton(
     icon: ImageVector? = null,
     fullWidth: Boolean = false
 ) {
+    val loadingDescription = stringResource(R.string.loading)
     val finalModifier = modifier.height(ConsumaSize.buttonHeight).let {
         if (fullWidth) it.fillMaxWidth() else it
-    }
+    }.semantics { if (loading) contentDescription = loadingDescription }
     
     Button(
         onClick = { if (!loading) onClick() },
@@ -45,13 +49,13 @@ fun ConsumaPrimaryButton(
     ) {
         if (loading) {
             CircularProgressIndicator(
-                modifier = Modifier.size(24.dp),
+                modifier = Modifier.size(ConsumaSize.iconMedium),
                 color = MaterialTheme.colorScheme.onPrimary,
-                strokeWidth = 2.dp
+                strokeWidth = ConsumaSpacing.xxs
             )
         } else {
             if (icon != null) {
-                Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(20.dp))
+                Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(ConsumaSize.iconMedium))
                 Spacer(modifier = Modifier.width(ConsumaSpacing.sm))
             }
             Text(text = text)
@@ -69,9 +73,10 @@ fun ConsumaSecondaryButton(
     icon: ImageVector? = null,
     fullWidth: Boolean = false
 ) {
+    val loadingDescription = stringResource(R.string.loading)
     val finalModifier = modifier.height(ConsumaSize.buttonHeight).let {
         if (fullWidth) it.fillMaxWidth() else it
-    }
+    }.semantics { if (loading) contentDescription = loadingDescription }
 
     OutlinedButton(
         onClick = { if (!loading) onClick() },
@@ -81,13 +86,13 @@ fun ConsumaSecondaryButton(
     ) {
         if (loading) {
             CircularProgressIndicator(
-                modifier = Modifier.size(24.dp),
+                modifier = Modifier.size(ConsumaSize.iconMedium),
                 color = MaterialTheme.colorScheme.primary,
-                strokeWidth = 2.dp
+                strokeWidth = ConsumaSpacing.xxs
             )
         } else {
             if (icon != null) {
-                Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(20.dp))
+                Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(ConsumaSize.iconMedium))
                 Spacer(modifier = Modifier.width(ConsumaSpacing.sm))
             }
             Text(text = text)

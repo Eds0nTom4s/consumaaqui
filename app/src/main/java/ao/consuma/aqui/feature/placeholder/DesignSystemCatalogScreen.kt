@@ -2,10 +2,8 @@ package ao.consuma.aqui.feature.placeholder
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -15,7 +13,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import ao.consuma.aqui.R
 import ao.consuma.aqui.core.designsystem.components.ConsumaAvatar
 import ao.consuma.aqui.core.designsystem.components.ConsumaDivider
 import ao.consuma.aqui.core.designsystem.components.ConsumaEmptyState
@@ -44,7 +43,7 @@ fun DesignSystemCatalogScreen(
     Scaffold(
         topBar = {
             ConsumaTopAppBar(
-                title = "Design System",
+                title = stringResource(R.string.catalog_title),
                 onBackClick = onNavigateBack
             )
         },
@@ -60,63 +59,59 @@ fun DesignSystemCatalogScreen(
         ) {
             ConsumaOfflineBanner()
 
-            ConsumaSectionHeader(title = "Cores e Temas")
-            Text(text = "O catálogo suporta dark e light theme nativamente.", style = MaterialTheme.typography.bodyMedium)
+            ConsumaSectionHeader(title = stringResource(R.string.catalog_colors_title))
+            Text(text = stringResource(R.string.catalog_colors_description), style = MaterialTheme.typography.bodyMedium)
 
-            ConsumaSectionHeader(title = "Tipografia")
-            Text(text = "Headline Large", style = MaterialTheme.typography.headlineLarge)
-            Text(text = "Title Medium", style = MaterialTheme.typography.titleMedium)
-            Text(text = "Body Medium", style = MaterialTheme.typography.bodyMedium)
-            Text(text = "Label Small", style = MaterialTheme.typography.labelSmall)
+            ConsumaSectionHeader(title = stringResource(R.string.catalog_typography_title))
+            Text(text = stringResource(R.string.catalog_headline_large), style = MaterialTheme.typography.headlineLarge)
+            Text(text = stringResource(R.string.catalog_title_medium), style = MaterialTheme.typography.titleMedium)
+            Text(text = stringResource(R.string.catalog_body_medium), style = MaterialTheme.typography.bodyMedium)
+            Text(text = stringResource(R.string.catalog_label_small), style = MaterialTheme.typography.labelSmall)
             
             ConsumaDivider()
 
-            ConsumaSectionHeader(title = "Botões")
-            ConsumaPrimaryButton(text = "Primary Button", onClick = { }, fullWidth = true, modifier = Modifier.testTag("primary_button"))
-            ConsumaSecondaryButton(text = "Secondary Button", onClick = { }, fullWidth = true)
-            ConsumaTextButton(text = "Text Button", onClick = { })
-            ConsumaPrimaryButton(text = "Loading Button", onClick = { }, loading = true)
+            ConsumaSectionHeader(title = stringResource(R.string.catalog_buttons_title))
+            ConsumaPrimaryButton(text = stringResource(R.string.catalog_primary_button), onClick = { }, fullWidth = true, modifier = Modifier.testTag("primary_button"))
+            ConsumaSecondaryButton(text = stringResource(R.string.catalog_secondary_button), onClick = { }, fullWidth = true)
+            ConsumaTextButton(text = stringResource(R.string.catalog_text_button), onClick = { })
+            ConsumaPrimaryButton(text = stringResource(R.string.catalog_loading_button), onClick = { }, loading = true)
 
             ConsumaDivider()
 
-            ConsumaSectionHeader(title = "Inputs")
-            ConsumaTextField(value = "", onValueChange = {}, label = "Text Field Padrão")
+            ConsumaSectionHeader(title = stringResource(R.string.catalog_inputs_title))
+            ConsumaTextField(value = "", onValueChange = {}, label = stringResource(R.string.catalog_text_field))
             ConsumaSearchField(query = "", onQueryChange = {}, modifier = Modifier.testTag("search_field"))
 
             ConsumaDivider()
 
-            ConsumaSectionHeader(title = "Cartões")
-            ConsumaMerchantCardPlaceholder(title = "Café de Angola", subtitle = "Luanda, Talatona", actionText = "Ver", onActionClick = {})
+            ConsumaSectionHeader(title = stringResource(R.string.catalog_cards_title))
+            ConsumaMerchantCardPlaceholder(title = stringResource(R.string.catalog_merchant), subtitle = stringResource(R.string.catalog_location), actionText = stringResource(R.string.catalog_view), onActionClick = {})
 
             ConsumaDivider()
 
-            ConsumaSectionHeader(title = "Chips e Estados")
-            ConsumaFilterChip(selected = true, onClick = {}, label = "Filtrar: Proximidade")
-            ConsumaStatusChip(text = "SUCESSO", semantic = ConsumaStatusSemantic.SUCCESS)
-            ConsumaStatusChip(text = "ALERTA", semantic = ConsumaStatusSemantic.WARNING)
+            ConsumaSectionHeader(title = stringResource(R.string.catalog_chips_title))
+            ConsumaFilterChip(selected = true, onClick = {}, label = stringResource(R.string.catalog_filter_nearby))
+            ConsumaStatusChip(text = stringResource(R.string.catalog_success), semantic = ConsumaStatusSemantic.SUCCESS)
+            ConsumaStatusChip(text = stringResource(R.string.catalog_warning), semantic = ConsumaStatusSemantic.WARNING)
             
             ConsumaDivider()
 
-            ConsumaSectionHeader(title = "Avatares")
+            ConsumaSectionHeader(title = stringResource(R.string.catalog_avatars_title))
             ConsumaAvatar(initials = "CA")
             
             ConsumaDivider()
 
-            ConsumaSectionHeader(title = "Preços")
-            ConsumaPriceText(price = "5.500 Kz", oldPrice = "6.000 Kz")
+            ConsumaSectionHeader(title = stringResource(R.string.catalog_prices_title))
+            ConsumaPriceText(price = stringResource(R.string.catalog_current_price), oldPrice = stringResource(R.string.catalog_old_price))
 
             ConsumaDivider()
 
-            ConsumaSectionHeader(title = "Mensagens Inline")
-            ConsumaInlineMessage(message = "Aviso importante do sistema.", semantic = ConsumaStatusSemantic.INFO)
+            ConsumaSectionHeader(title = stringResource(R.string.catalog_messages_title))
+            ConsumaInlineMessage(message = stringResource(R.string.catalog_inline_message), semantic = ConsumaStatusSemantic.INFO)
 
             ConsumaDivider()
 
-            ConsumaSectionHeader(title = "Estados de Tela")
-            Spacer(modifier = Modifier.height(200.dp).fillMaxWidth().padding(ConsumaSpacing.sm).let {
-                // Just to give space to show
-                it
-            })
+            ConsumaSectionHeader(title = stringResource(R.string.catalog_screen_states_title))
         }
     }
 }

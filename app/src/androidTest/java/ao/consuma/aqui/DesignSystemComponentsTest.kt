@@ -8,12 +8,14 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import ao.consuma.aqui.core.designsystem.components.ConsumaEmptyState
 import ao.consuma.aqui.core.designsystem.components.ConsumaErrorState
 import ao.consuma.aqui.core.designsystem.components.ConsumaPrimaryButton
+import ao.consuma.aqui.core.designsystem.components.ConsumaPriceText
 import ao.consuma.aqui.core.designsystem.components.ConsumaSearchField
 import ao.consuma.aqui.core.designsystem.components.ConsumaStatusChip
 import ao.consuma.aqui.core.designsystem.components.ConsumaStatusSemantic
@@ -63,6 +65,19 @@ class DesignSystemComponentsTest {
         composeTestRule.onNodeWithTag("loading_btn").performClick()
         composeTestRule.onNodeWithTag("loading_btn").performClick()
         assertEquals(0, clickCount)
+        composeTestRule.onNodeWithContentDescription("A carregar").assertExists()
+    }
+
+    @Test
+    fun discountedPrice_exposesMeaningfulAccessibilityDescription() {
+        composeTestRule.setContent {
+            ConsumaAquiTheme {
+                ConsumaPriceText(price = "5.500 Kz", oldPrice = "6.000 Kz")
+            }
+        }
+        composeTestRule
+            .onNodeWithContentDescription("Preço promocional: 5.500 Kz; preço anterior: 6.000 Kz")
+            .assertExists()
     }
 
     @Test

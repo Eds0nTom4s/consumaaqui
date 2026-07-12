@@ -10,6 +10,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import ao.consuma.aqui.R
 import ao.consuma.aqui.core.designsystem.theme.ConsumaAquiTheme
 import ao.consuma.aqui.core.designsystem.tokens.ConsumaSpacing
 
@@ -20,7 +24,15 @@ fun ConsumaPriceText(
     oldPrice: String? = null,
     unit: String? = null
 ) {
-    Row(modifier = modifier, verticalAlignment = Alignment.Bottom) {
+    val spokenPrice = when {
+        oldPrice != null -> stringResource(R.string.discount_price_accessibility, price, oldPrice)
+        unit != null -> stringResource(R.string.price_with_unit_accessibility, price, unit)
+        else -> stringResource(R.string.price_accessibility, price)
+    }
+    Row(
+        modifier = modifier.clearAndSetSemantics { contentDescription = spokenPrice },
+        verticalAlignment = Alignment.Bottom
+    ) {
         Text(
             text = price,
             style = MaterialTheme.typography.titleMedium,
