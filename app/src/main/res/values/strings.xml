@@ -8,4 +8,6 @@
     <string name="validate_navigation">Validar navegação</string>
     <string name="navigation_success">Navegação validada com sucesso!</string>
     <string name="try_again">Tentar Novamente</string>
+    <string name="offline_banner_text">Sem ligação à internet</string>
+    <string name="back">Voltar</string>
 </resources>

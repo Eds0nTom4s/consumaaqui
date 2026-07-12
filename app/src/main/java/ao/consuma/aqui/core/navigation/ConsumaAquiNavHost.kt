@@ -5,7 +5,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import ao.consuma.aqui.feature.bootstrap.SplashScreen
-import ao.consuma.aqui.feature.placeholder.FoundationReadyScreen
+import ao.consuma.aqui.feature.placeholder.DesignSystemCatalogScreen
 
 @Composable
 fun ConsumaAquiNavHost(navController: NavHostController) {
@@ -16,14 +16,16 @@ fun ConsumaAquiNavHost(navController: NavHostController) {
         composable(AppDestination.Splash.route) {
             SplashScreen(
                 onNavigateToNext = {
-                    navController.navigate(AppDestination.FoundationReady.route) {
+                    navController.navigate(AppDestination.DesignSystemCatalog.route) {
                         popUpTo(AppDestination.Splash.route) { inclusive = true }
                     }
                 }
             )
         }
-        composable(AppDestination.FoundationReady.route) {
-            FoundationReadyScreen()
+        composable(AppDestination.DesignSystemCatalog.route) {
+            DesignSystemCatalogScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
     }
 }

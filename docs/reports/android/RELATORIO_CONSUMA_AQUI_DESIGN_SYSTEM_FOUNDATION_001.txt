@@ -1,0 +1,110 @@
+RELATÓRIO: CONSUMA AQUI - DESIGN SYSTEM FOUNDATION 001
+
+1. Resumo executivo:
+A fundação do Design System Android da aplicação CONSUMA Aqui foi estabelecida. Foram definidos e integrados tokens visuais consistentes (cores, tipografia, espaçamentos, elevações, animações), um tema configurável sem suporte dinâmico para garantir coerência de marca e diversos componentes críticos da interface (Botões, Cartões, Campos de Texto, Imagens e Componentes de Feedback). Adicionalmente, foi incluída uma tela inicial de Catálogo de Design System. 
+
+2. Branch:
+android/design-system-foundation-001
+
+3. Commit base:
+76b73bfe9a9365793fca3e64a67b5fc98fa31450
+
+4. Estado inicial:
+O projecto continha apenas a estrutura básica de pastas, injecção de dependências (Hilt) e navegação simples (Splash -> FoundationReady). A aparência dependia totalmente das cores padrão roxas do Android Studio, e strings ou dimensões avulsas estavam espalhadas.
+
+5. Direcção visual:
+A interface foi direcionada a uma aparência moderna e acolhedora que reflete o serviço da marca (proximidade, rapidez e simplicidade), sem lembrar um dashboard corporativo ou um banco. A cor dominante estabelecida foi baseada no Laranja institucional.
+
+6. Decisões de marca:
+O "Dynamic Color" (Material You) foi desativado por padrão para que o aplicativo mantenha a identidade da CONSUMA, independentemente do papel de parede do usuário. Todos os recursos críticos mantêm legibilidade, incluindo o suporte automático entre "Light Theme" e "Dark Theme" sem redundância no código de paletas.
+
+7. Paleta criada:
+`Color.kt` e `SemanticColors.kt` contêm:
+- ConsumaOrangePrimary, OnPrimary, OrangeContainer
+- BackgroundLight/Dark, SurfaceLight/Dark, Outline
+- Semantic Base Colors (Success, Warning, Error, Info) em estruturas CompositionLocal (ConsumaSemanticColors).
+
+8. Tema claro:
+Definido como padrão com base em fundos F8F9FA, contrastes em texto negro/cinza, e a cor primária de destaque (Laranja).
+
+9. Tema escuro:
+Disponível e configurado nativamente utilizando as cores escuras correspondentes de fundo com texto claro em `Theme.kt`.
+
+10. Tipografia:
+A fonte utilizada atualmente é a `FontFamily.Default` do sistema, evitando peso desnecessário nesta fase inicial, utilizando a hierarquia `Typography` de títulos, corpo, e pequenos rótulos.
+
+11. Espaçamentos:
+Definidos em `ConsumaSpacing.kt`: xxs (2dp), xs (4dp), sm (8dp), md (12dp), lg (16dp), xl (24dp), xxl (32dp), xxxl (48dp).
+
+12. Tamanhos:
+Definidos em `ConsumaSize.kt`: touchTarget (48dp), buttonHeight (48dp), inputHeight (56dp), etc.
+
+13. Shapes:
+Definidos em `Shape.kt`: cantos arredondados de 4dp, 8dp, 12dp e 16dp.
+
+14. Elevações:
+Definidos em `ConsumaElevation.kt`: none (0), low (2dp), medium (4dp), high (8dp).
+
+15. Componentes criados:
+- ConsumaPrimaryButton, ConsumaSecondaryButton, ConsumaTextButton, ConsumaIconButton
+- ConsumaTextField, ConsumaSearchField
+- ConsumaCard, ConsumaClickableCard, ConsumaMerchantCardPlaceholder
+- ConsumaFilterChip, ConsumaStatusChip
+- ConsumaAvatar, ConsumaImagePlaceholder
+- ConsumaLoadingIndicator, ConsumaLoadingState, ConsumaEmptyState, ConsumaErrorState, ConsumaOfflineBanner, ConsumaInlineMessage
+- ConsumaSectionHeader, ConsumaDivider
+- ConsumaTopAppBar
+- ConsumaPriceText
+
+16. Componentes alterados:
+N/A (todos os novos baseiam-se em Material 3 do Compose).
+
+17. Componentes removidos:
+Removido o antigo e simples `ConsumaComponents.kt`, agora separado de forma coesa por módulos. Removida a tela `FoundationReadyScreen` e ViewModel.
+
+18. Catálogo visual:
+Criada a rota Splash -> DesignSystemCatalog com `DesignSystemCatalogScreen.kt`, mostrando um mostruário provisório com suporte a dark/light mode e testes de rolar.
+
+19. Previews:
+Aplicado `@Preview` em quase todos os novos ficheiros para verificação instantânea no editor.
+
+20. Acessibilidade:
+Os botões interativos e iconografias contemplam contentDescription e dimensões base de 48dp de toque em suas chamadas base. O estado "disabled" cancela interações no onClick.
+
+21. Dependências adicionadas:
+Nenhuma dependência externa adicionada.
+
+22. Dependências rejeitadas:
+Foram descartadas bibliotecas de imagens de terceiros (Coil) nesta fase, bem como integrações analíticas.
+
+23. Testes unitários:
+Mantidos e validados os testes não UI (resolução de ambiente e mensagens do UI).
+
+24. Testes Compose:
+Foram desenhados 8 blocos de teste em `DesignSystemComponentsTest.kt`, assegurando o comportamento individual dos novos componentes. E atualizado o `NavigationTest.kt` para garantir navegação a tela final do catálogo de design.
+
+25. Comandos executados:
+./gradlew clean assembleDebug testDebugUnitTest lintDebug assembleStaging assembleRelease
+
+26. Resultados:
+Todos os testes foram aprovados. A lint passou e todas as variantes de debug e release compilaram.
+
+27. Validação manual:
+Validado em emulador local as interações e a abertura segura do Catálogo sem Exceptions com suporte de Scroll garantido. Todos os previews também foram avaliados semanticamente.
+
+28. Ficheiros alterados:
+- `README.md`
+- Multiplos novos ficheiros sob `core/designsystem/`
+- Arquivos de navegação base e strings.xml.
+
+29. Riscos:
+Sem grande relevância no momento. O acréscimo de tokens em DesignSystem pode estender o código se mal gerenciado nas próximas rodadas, mas atua como ótima restrição de "mãos-livres" do dev.
+
+30. Pendências:
+Na transição para telas reais, ajustar avatares e imagens para uso de AsyncImage (quando adicionado carregador de imagens).
+
+31. Confirmação de escopo:
+Nenhuma integração comercial foi implementada. O "merchant placeholder" serve apenas para moldar o catálogo de exibição do UI e não afeta nada em lógica.
+
+32. Estado final do worktree:
+O repositório encontra-se atualizado e a branch apta para commit sem ficheiros corrompidos ou ignorados que devessem subir.

@@ -44,6 +44,10 @@ A aplicação suporta os seguintes ambientes:
 - O desenvolvimento é orientado por funcionalidades.
 - Não misturar lógica de negócio com a interface.
 - Utilizar os componentes visuais centralizados no `core/designsystem`.
+- **NÃO** usar strings hardcoded. Todas as strings devem estar em `strings.xml`.
+- **NÃO** usar cores hexadecimais espalhadas no código. Utilize os tokens e as paletas em `Theme.kt`, `Color.kt` e `SemanticColors.kt`.
+- **NÃO** usar margens e paddings arbitrários. Utilize os tokens de `ConsumaSpacing` e de `ConsumaSize`.
+- Catálogo de UI: Em modo de desenvolvimento, a tela `DesignSystemCatalogScreen` possibilita a auditoria de componentes e temas.
 - Avisos: URLs e secrets NÃO devem ser versionados neste repositório.
 
 ## Sequência de Prompts

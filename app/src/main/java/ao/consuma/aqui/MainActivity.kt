@@ -6,7 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.navigation.compose.rememberNavController
 import ao.consuma.aqui.core.navigation.ConsumaAquiNavHost
-import ao.consuma.aqui.ui.theme.ConsumaAquiTheme
+import ao.consuma.aqui.core.designsystem.theme.ConsumaAquiTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
