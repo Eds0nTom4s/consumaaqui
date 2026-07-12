@@ -1,0 +1,108 @@
+RELATÓRIO: CONSUMA AQUI - APP FOUNDATION 001
+
+1. Resumo executivo: 
+A fundação do projecto Android da aplicação CONSUMA Aqui foi estabelecida com sucesso. A base do projecto agora inclui as configurações de ambiente, arquitectura orientada por funcionalidades com base no Jetpack Compose, injecção de dependências via Hilt e componentes visuais e de navegação iniciais.
+
+2. Branch: 
+android/app-foundation-001
+
+3. Estado inicial: 
+O projecto era apenas um esqueleto vazio gerado manualmente no Android Studio. Não existia configuração de Hilt, estrutura de pastas ou navegação.
+
+4. Package name: 
+ao.consuma.aqui
+
+5. Versões relevantes: 
+- Kotlin: 2.0.21
+- AGP: 8.13.2
+- Compose BOM: 2024.09.00
+- minSdk: 29
+- targetSdk: 36
+
+6. Estrutura encontrada: 
+- Estrutura base de um projecto recém-criado com Jetpack Compose no Android Studio.
+
+7. Decisões arquitecturais: 
+- Arquitectura orientada por funcionalidades (core, feature, data).
+- UI puramente declarativa e com estados imutáveis através do Jetpack Compose.
+- Injecção de dependências utilizando o Hilt.
+- Navegação baseada em rotas com Navigation Compose.
+
+8. Dependências adicionadas: 
+- Hilt (com.google.dagger:hilt-android:2.51.1)
+- KSP (com.google.devtools.ksp)
+- Navigation Compose (androidx.navigation:navigation-compose:2.8.3)
+- Hilt Navigation Compose (androidx.hilt:hilt-navigation-compose:1.2.0)
+
+9. Dependências rejeitadas: 
+- Retrofit, Room, DataStore, Firebase, Analytics, entre outras, pois não são necessárias nesta fase técnica e devem ser adicionadas apenas quando houver utilização real.
+
+10. Estrutura final: 
+A estrutura do código agora é:
+app/src/main/java/ao/consuma/aqui/
+    ├── ConsumaAquiApplication.kt
+    ├── MainActivity.kt
+    ├── core/
+    │   ├── designsystem/components/
+    │   ├── environment/
+    │   ├── error/
+    │   ├── navigation/
+    │   └── ui/
+    └── feature/
+        ├── bootstrap/
+        └── placeholder/
+
+11. Componentes criados: 
+- ConsumaPrimaryButton
+- ConsumaLoadingState
+- ConsumaErrorState
+- ConsumaEmptyState
+
+12. Navegação: 
+- AppDestination: Splash -> FoundationReady.
+- ConsumaAquiNavHost alojado na MainActivity.
+
+13. Configuração de ambientes: 
+- Utilização de `buildConfigField` no `build.gradle.kts` para suportar as variantes `debug`, `staging` e `release`.
+
+14. Design system mínimo: 
+- Cores provisórias através do tema original e componentes base (Loading, Error, Botões).
+
+15. Tratamento de erros: 
+- Modelagem selada da classe `AppError` com categorias como Network, Validation, NotFound, etc.
+- `UiMessage` e `UiState` para controlo de estado das vistas.
+
+16. Testes criados: 
+- EnvironmentResolverTest (Unitário)
+- FoundationReadyViewModelTest (Unitário)
+- UiMessageTest (Unitário)
+- NavigationTest (Compose Test)
+
+17. Comandos executados: 
+- `./gradlew clean assembleDebug testDebugUnitTest lintDebug`
+
+18. Resultados: 
+- Todos os testes unitários foram validados. A compilação (assembleDebug) concluiu com êxito.
+
+19. Validação manual: 
+- Teste executado no emulador (via script de teste UI): Splash passa para FoundationReady, apresenta informações de ambiente e actualiza estado da interface ao clicar no botão.
+
+20. Ficheiros alterados: 
+- gradle/libs.versions.toml
+- build.gradle.kts
+- app/build.gradle.kts
+- app/src/main/AndroidManifest.xml
+- MainActivity.kt
+- Múltiplos novos ficheiros nas pastas core e feature.
+
+21. Riscos: 
+- Como estamos a utilizar KSP e Hilt recém-adicionados, há uma possível curva de aprendizado se a equipe for utilizar bibliotecas com processamento de anotação legadas futuramente.
+
+22. Pendências: 
+- Nenhuma para este escopo. Preparado para a próxima etapa (DESIGN-SYSTEM-FOUNDATION-001).
+
+23. Confirmação de escopo: 
+- Nenhuma funcionalidade de produto (pesquisa, carrinho, checkout) foi implementada nesta fase.
+
+24. Estado final do worktree: 
+- O worktree encontra-se limpo e pronto para commit na branch correspondente.
