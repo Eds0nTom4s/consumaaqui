@@ -10,6 +10,7 @@ import ao.consuma.aqui.feature.about.AboutScreen
 import ao.consuma.aqui.feature.developer.DesignSystemCatalogScreen
 import ao.consuma.aqui.feature.help.HelpScreen
 import ao.consuma.aqui.feature.home.HomeScreen
+import ao.consuma.aqui.feature.location.LocationSettingsScreen
 import ao.consuma.aqui.feature.more.MoreScreen
 import ao.consuma.aqui.feature.orders.OrdersScreen
 import ao.consuma.aqui.feature.search.SearchScreen
@@ -19,6 +20,7 @@ import ao.consuma.aqui.feature.settings.SettingsScreen
 fun AppShellNavigation(
     appState: ConsumaAppState,
     isDesignSystemCatalogEnabled: Boolean,
+    onNavigateToLocationSetup: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -27,7 +29,9 @@ fun AppShellNavigation(
         modifier = modifier
     ) {
         composable(AppDestination.Home.route) {
-            HomeScreen()
+            HomeScreen(
+                onNavigateToLocationSettings = { appState.navigateTo(AppDestination.LocationSettings) }
+            )
         }
         composable(AppDestination.Search.route) {
             SearchScreen()
@@ -42,6 +46,7 @@ fun AppShellNavigation(
                 onNavigateToSettings = { appState.navigateTo(AppDestination.Settings) },
                 onNavigateToHelp = { appState.navigateTo(AppDestination.Help) },
                 onNavigateToAbout = { appState.navigateTo(AppDestination.About) },
+                onNavigateToLocationSettings = { appState.navigateTo(AppDestination.LocationSettings) },
                 onNavigateToDesignSystem = if (isDesignSystemCatalogEnabled) {
                     { appState.navigateTo(AppDestination.DesignSystemCatalog) }
                 } else null,
@@ -61,6 +66,12 @@ fun AppShellNavigation(
         composable(AppDestination.About.route) {
             AboutScreen(
                 onNavigateBack = appState::navigateBack
+            )
+        }
+        composable(AppDestination.LocationSettings.route) {
+            LocationSettingsScreen(
+                onNavigateBack = appState::navigateBack,
+                onNavigateToLocationSetup = onNavigateToLocationSetup
             )
         }
         if (isDesignSystemCatalogEnabled) {

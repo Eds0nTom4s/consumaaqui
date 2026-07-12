@@ -10,6 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.HorizontalDivider
@@ -35,6 +36,7 @@ fun MoreScreen(
     onNavigateToSettings: () -> Unit,
     onNavigateToHelp: () -> Unit,
     onNavigateToAbout: () -> Unit,
+    onNavigateToLocationSettings: () -> Unit,
     onNavigateToDesignSystem: (() -> Unit)?,
     isDesignSystemCatalogEnabled: Boolean,
     modifier: Modifier = Modifier
@@ -53,6 +55,22 @@ fun MoreScreen(
                 .padding(ConsumaSpacing.lg),
             verticalArrangement = Arrangement.spacedBy(ConsumaSpacing.md)
         ) {
+            ConsumaClickableCard(
+                onClick = onNavigateToLocationSettings,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag(NavigationTestTags.MORE_LOCATION)
+            ) {
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.more_location)) },
+                    leadingContent = {
+                        androidx.compose.material3.Icon(
+                            imageVector = Icons.Default.LocationOn,
+                            contentDescription = null
+                        )
+                    }
+                )
+            }
             ConsumaClickableCard(
                 onClick = onNavigateToSettings,
                 modifier = Modifier.fillMaxWidth()
@@ -154,6 +172,7 @@ private fun MoreScreenPreview() {
             onNavigateToSettings = {},
             onNavigateToHelp = {},
             onNavigateToAbout = {},
+            onNavigateToLocationSettings = {},
             onNavigateToDesignSystem = {},
             isDesignSystemCatalogEnabled = true
         )

@@ -8,6 +8,8 @@ import ao.consuma.aqui.core.appstate.ConsumaAppState
 import ao.consuma.aqui.core.appstate.rememberConsumaAppState
 import ao.consuma.aqui.feature.bootstrap.InitializationGateway
 import ao.consuma.aqui.feature.bootstrap.SplashScreen
+import ao.consuma.aqui.feature.location.LocationSetupRoute
+import ao.consuma.aqui.feature.onboarding.OnboardingScreen
 
 @Composable
 fun RootNavigation(
@@ -29,9 +31,32 @@ fun RootNavigation(
         }
         composable(AppDestination.Initialization.route) {
             InitializationGateway(
-                onInitializationComplete = {
+                onNavigateToOnboarding = {
+                    rootNavController.navigate(AppDestination.Onboarding.route) {
+                        popUpTo(AppDestination.Initialization.route) { inclusive = true }
+                    }
+                },
+                onNavigateToAppShell = {
                     rootNavController.navigate(AppDestination.AppShell.route) {
                         popUpTo(AppDestination.Initialization.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+        composable(AppDestination.Onboarding.route) {
+            OnboardingScreen(
+                onOnboardingComplete = {
+                    rootNavController.navigate(AppDestination.LocationSetup.route) {
+                        popUpTo(AppDestination.Onboarding.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+        composable(AppDestination.LocationSetup.route) {
+            LocationSetupRoute(
+                onSetupComplete = {
+                    rootNavController.navigate(AppDestination.AppShell.route) {
+                        popUpTo(AppDestination.LocationSetup.route) { inclusive = true }
                     }
                 }
             )
@@ -40,7 +65,12 @@ fun RootNavigation(
             val appState = rememberConsumaAppState()
             ConsumaAppShell(
                 appState = appState,
-                isDesignSystemCatalogEnabled = isDesignSystemCatalogEnabled
+                isDesignSystemCatalogEnabled = isDesignSystemCatalogEnabled,
+                onNavigateToLocationSetup = {
+                    rootNavController.navigate(AppDestination.LocationSetup.route) {
+                        popUpTo(AppDestination.AppShell.route) { inclusive = false }
+                    }
+                }
             )
         }
     }

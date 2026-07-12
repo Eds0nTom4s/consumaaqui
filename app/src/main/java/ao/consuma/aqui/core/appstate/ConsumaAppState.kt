@@ -38,6 +38,12 @@ class ConsumaAppState(
             AppDestination.Search.route,
             AppDestination.Orders.route,
             AppDestination.More.route -> true
+            AppDestination.Onboarding.route,
+            AppDestination.LocationSetup.route,
+            AppDestination.LocationSettings.route,
+            AppDestination.Splash.route,
+            AppDestination.Initialization.route,
+            AppDestination.AppShell.route -> false
             else -> false
         }
 

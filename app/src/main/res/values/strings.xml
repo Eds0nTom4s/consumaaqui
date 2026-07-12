@@ -110,4 +110,51 @@
     <!-- Snackbar -->
     <string name="snackbar_dismiss">Fechar</string>
     <string name="snackbar_demo_message">Esta é uma mensagem de exemplo.</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_discover_title">Encontre o que precisa</string>
+    <string name="onboarding_discover_description">Descubra restaurantes, comerciantes e serviços disponíveis perto de si.</string>
+    <string name="onboarding_choose_title">Escolha com simplicidade</string>
+    <string name="onboarding_choose_description">Consulte opções, preços e informações antes de fazer o seu pedido.</string>
+    <string name="onboarding_track_title">Acompanhe o pedido</string>
+    <string name="onboarding_track_description">Receba actualizações desde a confirmação até à conclusão.</string>
+    <string name="onboarding_continue">Continuar</string>
+    <string name="onboarding_skip">Saltar</string>
+    <string name="onboarding_start">Começar</string>
+
+    <!-- Location -->
+    <string name="location_explanation_title">Encontre opções próximas</string>
+    <string name="location_explanation_description">A sua localização ajuda a CONSUMA Aqui a apresentar comerciantes e serviços disponíveis na sua zona.</string>
+    <string name="location_explanation_privacy">Pode continuar sem permitir acesso e escolher uma localização manualmente.</string>
+    <string name="location_use_current">Usar localização</string>
+    <string name="location_choose_manually">Escolher manualmente</string>
+    <string name="location_skip">Agora não</string>
+    <string name="location_detecting">A detectar localização</string>
+    <string name="location_detecting_description">Estamos a procurar uma localização simulada para demonstrar o fluxo.</string>
+    <string name="location_found_title">Localização encontrada</string>
+    <string name="location_confirm">Confirmar localização</string>
+    <string name="location_choose_another">Escolher outra</string>
+    <string name="location_manual_title">Escolher localização</string>
+    <string name="location_manual_description">Seleccione a zona onde pretende encontrar comerciantes.</string>
+    <string name="location_search_placeholder">Pesquisar zona…</string>
+    <string name="location_search_empty_title">Nenhuma zona encontrada</string>
+    <string name="location_search_empty_description">Tente pesquisar por "Maianga", "Talatona" ou outra zona de Luanda.</string>
+    <string name="location_search_clear">Limpar pesquisa</string>
+    <string name="location_settings_title">Localização</string>
+    <string name="location_current_title">Localização actual</string>
+    <string name="location_not_configured_title">Nenhuma localização seleccionada</string>
+    <string name="location_not_configured_description">Escolha uma localização para encontrar comerciantes próximos.</string>
+    <string name="location_settings_change">Alterar localização</string>
+    <string name="location_settings_remove">Remover localização</string>
+    <string name="location_settings_choose">Escolher localização</string>
+
+    <!-- Home location -->
+    <string name="home_current_location">Localização actual</string>
+    <string name="home_change_location">Alterar</string>
+    <string name="home_no_location_title">Escolha uma localização</string>
+    <string name="home_no_location_description">Escolha uma localização para encontrar comerciantes próximos.</string>
+    <string name="home_choose_location">Escolher localização</string>
+
+    <!-- More -->
+    <string name="more_location">Localização</string>
 </resources>

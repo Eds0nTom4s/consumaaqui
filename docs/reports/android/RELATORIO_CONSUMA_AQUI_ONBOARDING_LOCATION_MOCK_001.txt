@@ -1,0 +1,590 @@
+RELATÓRIO TÉCNICO — CONSUMA AQUI ANDROID
+FASE: ONBOARDING-LOCATION-MOCK-001
+Data: 2026-07-12
+
+==================================================
+1. RESUMO EXECUTIVO
+==================================================
+
+Esta fase implementou o primeiro fluxo real de entrada do utilizador na
+CONSUMA Aqui, incluindo onboarding de três passos, explicação do uso da
+localização, detecção simulada, escolha manual e integração com a Home e
+com a área "Mais".
+
+Não foram utilizadas APIs reais de localização, permissões Android, GPS,
+mapas, backend, Room, DataStore ou Retrofit. Todo o estado é mantido em
+memória durante o processo através de um repositório temporário
+claramente documentado como substituível.
+
+==================================================
+2. BRANCH
+==================================================
+
+android/onboarding-location-mock-001
+
+==================================================
+3. COMMIT BASE
+==================================================
+
+a5017b6ea8e597023d0f1226c30744645d4b1b33
+(fix(android): restore design system tests and stabilize instrumented navigation tests)
+
+==================================================
+4. ESTADO INICIAL
+==================================================
+
+- Worktree limpo.
+- Branch base: android/app-shell-navigation-001.
+- HEAD exactamente em a5017b6ea8e597023d0f1226c30744645d4b1b33.
+- Baseline validado: testDebugUnitTest, assembleDebug, assembleStaging,
+  assembleRelease e lintDebug passavam; connectedDebugAndroidTest passou
+  em dispositivo anterior (25 testes, 1 skipped).
+
+==================================================
+5. FLUXO IMPLEMENTADO
+==================================================
+
+PRIMEIRA ABERTURA
+Splash → Initialization → Onboarding → Location Setup → AppShell/Home
+
+ABERTURA POSTERIOR (mesmo processo)
+Splash → Initialization → Home
+
+A PARTIR DE MAIS
+Mais → Localização → LocationSettings
+       → Alterar localização → LocationSetup → Home/Mais
+       → Remover localização → Mais
+
+==================================================
+6. NAVEGAÇÃO RAIZ
+==================================================
+
+RootNavigation agora contém:
+- Splash
+- Initialization
+- Onboarding
+- LocationSetup
+- AppShell
+
+A navegação raiz permanece separada do AppShell. Onboarding e Location
+Setup não fazem parte da Bottom Navigation.
+
+==================================================
+7. ONBOARDING
+==================================================
+
+Criado feature/onboarding/ com:
+- OnboardingScreen.kt
+- OnboardingViewModel.kt
+- OnboardingUiState.kt
+- OnboardingEvent.kt
+
+Três páginas:
+1. Encontre o que precisa (Search)
+2. Escolha com simplicidade (LocationOn)
+3. Acompanhe o pedido (CheckCircle)
+
+Acções:
+- Saltar (sempre visível)
+- Continuar (páginas 1 e 2)
+- Começar (última página)
+
+Utiliza HorizontalPager do Compose Foundation com indicador de página,
+sincronização bidireccional entre pager e ViewModel, e suporte a swipe.
+
+==================================================
+8. LOCALIZAÇÃO SIMULADA
+==================================================
+
+Criado feature/location/ com:
+- MockLocationRepository.kt
+- LocationSetupRoute.kt
+- LocationExplanationScreen.kt
+- LocationDetectingScreen.kt
+- LocationDetectedScreen.kt
+- ManualLocationSelectionScreen.kt
+- LocationSetupViewModel.kt
+- LocationSetupUiState.kt
+- LocationSetupEvent.kt
+
+Localizações simuladas (5 zonas de Luanda):
+- Maianga
+- Talatona
+- Kilamba
+- Viana
+- Mutamba
+
+Modelo imutável MockLocation(id, city, area, displayName).
+
+Fluxo:
+- Explanation → Detecting → Detected → Confirm
+- Explanation → ManualSelection → Select → Confirm
+- Explanation → Skip → Home
+
+A detecção é determinística e síncrona, sem delay artificial.
+
+==================================================
+9. ESCOLHA MANUAL
+==================================================
+
+A tela de escolha manual apresenta:
+- campo de pesquisa local;
+- lista de localizações simuladas;
+- estado seleccionado via RadioButton;
+- filtragem case-insensitive por cidade, zona ou nome completo;
+- estado vazio com ConsumaEmptyState quando não há resultados.
+
+==================================================
+10. PERSISTÊNCIA EM MEMÓRIA
+==================================================
+
+InMemoryAppLaunchStateRepository:
+- @Singleton via Hilt;
+- mantém onboarding concluído e LocationPreference;
+- substituível futuramente por DataStore;
+- método reset() para testes instrumentados.
+
+LocationPreference sealed interface:
+- NotConfigured
+- Skipped
+- Selected(location)
+
+==================================================
+11. INITIALIZATION GATEWAY
+==================================================
+
+ConsumaInitializationGatewayViewModel:
+- consulta AppLaunchStateRepository;
+- decide entre Onboarding e AppShell;
+- mantém a interface InitializationGatewayViewModel;
+- não bloqueia a UI.
+
+InitializationResult:
+- Onboarding
+- AppShell
+- Failure (reservado para evolução)
+
+==================================================
+12. ESTADO DA HOME
+==================================================
+
+HomeScreen observa LocationPreference:
+- Selected: mostra LocationCard com localização actual e acção Alterar.
+- Skipped/NotConfigured: mostra NoLocationCard com explicação e botão
+  Escolher localização.
+
+Criado HomeViewModel para expor o estado sem transformar HomeScreen num
+god object.
+
+==================================================
+13. LOCALIZAÇÃO EM MAIS
+==================================================
+
+MoreScreen adiciona item "Localização".
+LocationSettingsScreen:
+- mostra localização actual;
+- permite Alterar (navega para LocationSetup);
+- permite Remover;
+- é destino secundário: Bottom Navigation oculta.
+
+Disponível em todas as variantes (não é ferramenta de desenvolvimento).
+
+==================================================
+14. MODELOS
+==================================================
+
+feature/launch/domain/:
+- MockLocation.kt
+- LocationPreference.kt
+- AppLaunchStateRepository.kt
+- InMemoryAppLaunchStateRepository.kt
+
+==================================================
+15. REPOSITÓRIOS
+==================================================
+
+- AppLaunchStateRepository: abstracção de estado de lançamento.
+- InMemoryAppLaunchStateRepository: implementação temporária em memória.
+- MockLocationRepository: fornece localizações simuladas fixas.
+
+LaunchStateModule faz bind do repositório via Hilt.
+
+==================================================
+16. VIEWMODELS
+==================================================
+
+Criados com estado real:
+- OnboardingViewModel: página actual e conclusão.
+- LocationSetupViewModel: estados do fluxo, pesquisa, selecção,
+  confirmação, skip.
+- LocationSettingsViewModel: observa preferência actual e remove.
+- HomeViewModel: observa preferência actual.
+- ConsumaInitializationGatewayViewModel: decisão inicial.
+
+Nenhum ViewModel contém Context, Activity, NavController ou strings
+Android.
+
+==================================================
+17. EVENTOS
+==================================================
+
+OnboardingEvent:
+- Continue, Skip, Finish, PageChanged
+
+LocationSetupEvent:
+- UseCurrentLocation, ChooseManually, Skip, SearchChanged,
+  LocationSelected, Confirm, ChooseAnother, BackToExplanation
+
+Eventos explícitos; sem callbacks dispersos, sem event bus.
+
+==================================================
+18. ACESSIBILIDADE
+==================================================
+
+- Labels em botões de onboarding e localização.
+- contentDescription nos ícones quando informativos.
+- Opção seleccionada anunciada via RadioButton.
+- Localização actual anunciada em ListItem.
+- Área mínima de toque respeitada.
+- Suporte a escala de fonte.
+- testTags não substituem semântica.
+
+==================================================
+19. STRINGS
+==================================================
+
+Todas as strings visíveis centralizadas em res/values/strings.xml,
+incluindo onboarding, localização, Home e Mais. Sem textos hardcoded
+nos composables.
+
+==================================================
+20. PREVIEWS
+==================================================
+
+Onboarding:
+- primeira página;
+- última página;
+- dark theme.
+
+Location:
+- explicação;
+- detectando;
+- localização encontrada;
+- manual;
+- pesquisa sem resultado;
+- sem localização configurada.
+
+Home:
+- com localização;
+- sem localização.
+
+==================================================
+21. TESTES UNITÁRIOS
+==================================================
+
+Ficheiros:
+- feature/launch/InMemoryAppLaunchStateRepositoryTest.kt
+- feature/onboarding/OnboardingViewModelTest.kt
+- feature/location/LocationSetupViewModelTest.kt
+- feature/bootstrap/ConsumaInitializationGatewayViewModelTest.kt
+
+Cobertura:
+- estado inicial do repositório;
+- conclusão de onboarding;
+- selecção, skip e remoção de localização;
+- avanço/pulo/conclusão do onboarding;
+- estados do location setup;
+- pesquisa e filtragem;
+- confirmação e skip;
+- decisão da Initialization Gateway.
+
+Resultado:
+- ./gradlew testDebugUnitTest: PASS
+- ./gradlew testStagingUnitTest: PASS
+- ./gradlew testReleaseUnitTest: PASS
+
+==================================================
+22. TESTES INSTRUMENTADOS
+==================================================
+
+Ficheiros criados:
+- OnboardingFlowTest.kt
+- LocationSetupFlowTest.kt
+- HomeLocationTest.kt
+- MoreLocationTest.kt
+- LaunchStateRule.kt (reutilizável)
+
+Ficheiros adaptados:
+- AppNavigationTest.kt
+- MoreDestinationsTest.kt
+- EnvironmentPolicyInstrumentedTest.kt
+- SearchStateRestorationTest.kt
+
+Cobertura:
+1. primeira abertura → Onboarding;
+2. avançar pelas três páginas do onboarding;
+3. Saltar → Location Setup;
+4. usar localização simulada → detectar → confirmar → Home;
+5. escolher manualmente → seleccionar → confirmar → Home;
+6. Agora não → Home sem localização;
+7. Home com localização;
+8. Home sem localização;
+9. Mais → Localização;
+10. alterar localização;
+11. remover localização;
+12. Bottom Navigation oculta durante onboarding/location setup;
+13. Bottom Navigation oculta em LocationSettings;
+14. back manual regressa à explicação;
+15. testes anteriores (Design System, App Shell, navegação) mantidos.
+
+Resultado:
+- Compilação dos testes instrumentados: PASS
+- Execução em dispositivo: NÃO REALIZADA (nenhum dispositivo/emulador
+  conectado durante a validação final).
+
+==================================================
+23. COBERTURA ACUMULADA
+==================================================
+
+Testes instrumentados acumulados das fases anteriores:
+- DesignSystemCatalogTest
+- DesignSystemComponentsTest
+- AppNavigationTest
+- MoreDestinationsTest
+- EnvironmentPolicyInstrumentedTest
+- SearchStateRestorationTest
+- SnackbarTest
+
+Novos testes desta fase:
+- OnboardingFlowTest
+- LocationSetupFlowTest
+- HomeLocationTest
+- MoreLocationTest
+
+Nenhum teste aprovado anterior foi removido.
+
+==================================================
+24. TESTES POR VARIANTE
+==================================================
+
+- ./gradlew testDebugUnitTest: PASS
+- ./gradlew testStagingUnitTest: PASS
+- ./gradlew testReleaseUnitTest: PASS
+- ./gradlew assembleDebug: PASS
+- ./gradlew assembleStaging: PASS
+- ./gradlew assembleRelease: PASS
+- ./gradlew lintDebug: PASS
+- ./gradlew connectedDebugAndroidTest: NÃO EXECUTADO (sem dispositivo)
+
+==================================================
+25. BUILDS
+==================================================
+
+Todas as variantes compilam com sucesso:
+- debug
+- staging
+- release
+
+==================================================
+26. LINT
+==================================================
+
+./gradlew lintDebug executado sem erros.
+
+==================================================
+27. VALIDAÇÃO MANUAL
+==================================================
+
+Dispositivo: não disponível durante a validação final.
+adb devices: lista vazia.
+
+Limitação:
+- A validação manual e a execução de connectedDebugAndroidTest não foram
+  possíveis por ausência de dispositivo/emulador conectado.
+- Recomenda-se executar num dispositivo ou emulador antes da auditoria
+  final.
+
+==================================================
+28. FICHEIROS ALTERADOS
+==================================================
+
+Novos:
+- app/src/main/java/ao/consuma/aqui/feature/launch/domain/MockLocation.kt
+- app/src/main/java/ao/consuma/aqui/feature/launch/domain/LocationPreference.kt
+- app/src/main/java/ao/consuma/aqui/feature/launch/domain/AppLaunchStateRepository.kt
+- app/src/main/java/ao/consuma/aqui/feature/launch/domain/InMemoryAppLaunchStateRepository.kt
+- app/src/main/java/ao/consuma/aqui/feature/launch/di/LaunchStateModule.kt
+- app/src/main/java/ao/consuma/aqui/feature/onboarding/OnboardingScreen.kt
+- app/src/main/java/ao/consuma/aqui/feature/onboarding/OnboardingViewModel.kt
+- app/src/main/java/ao/consuma/aqui/feature/onboarding/OnboardingUiState.kt
+- app/src/main/java/ao/consuma/aqui/feature/onboarding/OnboardingEvent.kt
+- app/src/main/java/ao/consuma/aqui/feature/location/MockLocationRepository.kt
+- app/src/main/java/ao/consuma/aqui/feature/location/LocationSetupRoute.kt
+- app/src/main/java/ao/consuma/aqui/feature/location/LocationExplanationScreen.kt
+- app/src/main/java/ao/consuma/aqui/feature/location/LocationDetectingScreen.kt
+- app/src/main/java/ao/consuma/aqui/feature/location/LocationDetectedScreen.kt
+- app/src/main/java/ao/consuma/aqui/feature/location/ManualLocationSelectionScreen.kt
+- app/src/main/java/ao/consuma/aqui/feature/location/LocationSetupViewModel.kt
+- app/src/main/java/ao/consuma/aqui/feature/location/LocationSetupUiState.kt
+- app/src/main/java/ao/consuma/aqui/feature/location/LocationSetupEvent.kt
+- app/src/main/java/ao/consuma/aqui/feature/location/LocationSettingsScreen.kt
+- app/src/main/java/ao/consuma/aqui/feature/location/LocationSettingsViewModel.kt
+- app/src/main/java/ao/consuma/aqui/feature/home/HomeViewModel.kt
+- app/src/androidTest/java/ao/consuma/aqui/OnboardingFlowTest.kt
+- app/src/androidTest/java/ao/consuma/aqui/LocationSetupFlowTest.kt
+- app/src/androidTest/java/ao/consuma/aqui/HomeLocationTest.kt
+- app/src/androidTest/java/ao/consuma/aqui/MoreLocationTest.kt
+- app/src/androidTest/java/ao/consuma/aqui/LaunchStateRule.kt
+- app/src/test/java/ao/consuma/aqui/feature/launch/InMemoryAppLaunchStateRepositoryTest.kt
+- app/src/test/java/ao/consuma/aqui/feature/onboarding/OnboardingViewModelTest.kt
+- app/src/test/java/ao/consuma/aqui/feature/location/LocationSetupViewModelTest.kt
+- app/src/test/java/ao/consuma/aqui/feature/bootstrap/ConsumaInitializationGatewayViewModelTest.kt
+- docs/reports/android/RELATORIO_CONSUMA_AQUI_ONBOARDING_LOCATION_MOCK_001.txt
+
+Alterados:
+- app/src/main/java/ao/consuma/aqui/core/navigation/AppDestination.kt
+- app/src/main/java/ao/consuma/aqui/core/navigation/RootNavigation.kt
+- app/src/main/java/ao/consuma/aqui/core/navigation/AppShellNavigation.kt
+- app/src/main/java/ao/consuma/aqui/core/navigation/ConsumaAppShell.kt
+- app/src/main/java/ao/consuma/aqui/core/navigation/NavigationTestTags.kt
+- app/src/main/java/ao/consuma/aqui/core/appstate/ConsumaAppState.kt
+- app/src/main/java/ao/consuma/aqui/core/designsystem/tokens/ConsumaSize.kt
+- app/src/main/java/ao/consuma/aqui/feature/bootstrap/InitializationGateway.kt
+- app/src/main/java/ao/consuma/aqui/feature/home/HomeScreen.kt
+- app/src/main/java/ao/consuma/aqui/feature/more/MoreScreen.kt
+- app/src/main/res/values/strings.xml
+- app/src/androidTest/java/ao/consuma/aqui/AppNavigationTest.kt
+- app/src/androidTest/java/ao/consuma/aqui/MoreDestinationsTest.kt
+- app/src/androidTest/java/ao/consuma/aqui/EnvironmentPolicyInstrumentedTest.kt
+- app/src/androidTest/java/ao/consuma/aqui/SearchStateRestorationTest.kt
+
+Removidos:
+- Nenhum.
+
+==================================================
+29. RISCOS
+==================================================
+
+- Estado apenas em memória: reinício do processo reinicia o onboarding.
+- Localização simulada não representa GPS real.
+- Lista limitada a cinco zonas de Luanda.
+- Ausência de permissões reais Android.
+- Ausência de persistência definitiva.
+- Navegação ainda sem versionamento de onboarding.
+- Testes instrumentados não executados em dispositivo por indisponibilidade.
+- @BindValue com @UninstallModules introduz complexidade extra nos testes
+  instrumentados, mas mantém isolamento entre testes.
+
+==================================================
+30. PENDÊNCIAS
+==================================================
+
+- Executar ./gradlew connectedDebugAndroidTest quando houver dispositivo
+  disponível.
+- Validar comportamento em landscape e tablets.
+- Substituir InMemoryAppLaunchStateRepository por DataStore.
+- Substituir MockLocationRepository por localização real.
+- Adicionar versionamento de onboarding para forçar re-exibição após
+  actualizações relevantes.
+
+==================================================
+31. ESTADO DO WORKTREE
+==================================================
+
+- Branch: android/onboarding-location-mock-001
+- HEAD: a ser confirmado após commit funcional
+- Worktree: alterações pendentes da implementação
+- git diff --check: sem erros de whitespace
+- Diff restrito a onboarding, localização mock, navegação raiz, Home,
+  Mais e testes.
+
+==================================================
+32. CONFIRMAÇÃO DE ESCOPO
+==================================================
+
+Nenhuma funcionalidade comercial foi implementada nesta fase.
+Não foram criados: comerciantes, categorias, produtos, pedidos, carrinho,
+checkout, pagamentos, autenticação, OTP, favoritos, notificações,
+analytics, deep links, backend, Retrofit, Room, DataStore, GPS, mapas,
+geocoding, permissões reais ou sessão de utilizador.
+
+Apenas o fluxo de onboarding, a localização simulada, a persistência em
+memória temporária e os testes correspondentes foram implementados.
+
+==================================================
+ANÁLISE ARQUITECTURAL
+==================================================
+
+Decisões tomadas:
+- Separar estado de lançamento (AppLaunchStateRepository) do domínio
+  comercial futuro. Isso permite substituir a persistência sem tocar no
+  resto da aplicação.
+- Usar InMemoryAppLaunchStateRepository como @Singleton Hilt, claramente
+  documentado como temporário. Evita singleton mutável global manual.
+- Manter LocationPreference como sealed interface para evitar ambiguidade
+  entre "nunca configurado", "recusado" e "seleccionado".
+- Navegação por callbacks simples, sem SharedFlow/Channel/event bus.
+- HorizontalPager do Compose Foundation para onboarding, evitando
+  dependências externas.
+- ViewModels apenas onde existe estado real (onboarding, location setup,
+  home, settings).
+
+Alternativas consideradas:
+- SharedFlow para eventos de navegação: rejeitado por adicionar
+  complexidade e risco de eventos repetidos numa fase ainda pequena.
+- Type-safe navigation: rejeitado porque o escopo continua baseado em
+  rotas String e a migração não era obrigatória.
+- DataStore nesta fase: rejeitado pelo próprio prompt para manter foco no
+  fluxo e contratos.
+
+Razões de rejeição:
+- SharedFlow/Channel violam a proibição de event bus global e complicam
+  testes.
+- DataStore nesta fase adicionaria dependência e complexidade fora do
+  escopo.
+
+Impacto futuro:
+- A AppLaunchStateRepository pode ser substituída por uma implementação
+  baseada em DataStore sem alterar ViewModels ou telas.
+- MockLocationRepository pode ser substituído por um repositório que use
+  FusedLocationProviderClient ou backend.
+- Onboarding pode ganhar versionamento consultando o repositório.
+
+Riscos técnicos:
+- InMemoryAppLaunchStateRepository é um @Singleton Hilt; se o processo
+  for morto e recriado, o estado desaparece. Isso é aceitável para MVP.
+- @UninstallModules em muitos testes instrumentados aumenta a verbosidade;
+  uma base comum poderia reduzir, mas optámos por claridade por teste.
+
+Oportunidades de reutilização:
+- LocationPreference e AppLaunchStateRepository podem absorver futuras
+  preferências (tema, língua, notificações).
+- LocationSetupRoute pode ser reutilizado para alterar localização a
+  partir de qualquer destino.
+
+Custo de manutenção:
+- Baixo. As fronteiras estão claras: domínio em feature/launch/, UI em
+  feature/onboarding/ e feature/location/, navegação em core/navigation/.
+
+Fronteiras que não devem ser quebradas nas próximas fases:
+- Não transformar ConsumaAppState num god object.
+- Não espalhar BuildConfig.ENVIRONMENT fora de NavigationPolicy.
+- Não misturar navegação raiz com navegação do App Shell.
+- Não criar dependência entre telas de onboarding/location e lógica
+  comercial real.
+
+Plano de substituição do mock por localização real:
+1. Criar LocationRepository real que use FusedLocationProviderClient.
+2. Adicionar permissões de localização ao manifesto e runtime.
+3. Implementar graceful degradation quando permissão for recusada.
+4. Substituir MockLocationRepository mantendo a interface/contracto.
+5. Actualizar LocationSetupViewModel para delegar detecção ao novo
+   repositório.
+
+Plano de substituição da memória por DataStore:
+1. Criar DataStoreAppLaunchStateRepository implementando
+   AppLaunchStateRepository.
+2. Substituir o bind no LaunchStateModule.
+3. Remover InMemoryAppLaunchStateRepository quando não for mais
+   necessário para testes.
+4. Garantir migração suave se o esquema de preferências evoluir.

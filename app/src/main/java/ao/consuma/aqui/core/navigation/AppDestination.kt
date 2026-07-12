@@ -13,6 +13,8 @@ import ao.consuma.aqui.R
 sealed class AppDestination(val route: String) {
     data object Splash : AppDestination("splash")
     data object Initialization : AppDestination("initialization")
+    data object Onboarding : AppDestination("onboarding")
+    data object LocationSetup : AppDestination("location_setup")
     data object AppShell : AppDestination("app_shell")
     data object Home : AppDestination("home")
     data object Search : AppDestination("search")
@@ -21,12 +23,15 @@ sealed class AppDestination(val route: String) {
     data object Settings : AppDestination("settings")
     data object Help : AppDestination("help")
     data object About : AppDestination("about")
+    data object LocationSettings : AppDestination("location_settings")
     data object DesignSystemCatalog : AppDestination("design_system_catalog")
 
     companion object {
         val all: List<AppDestination> = listOf(
             Splash,
             Initialization,
+            Onboarding,
+            LocationSetup,
             AppShell,
             Home,
             Search,
@@ -35,6 +40,7 @@ sealed class AppDestination(val route: String) {
             Settings,
             Help,
             About,
+            LocationSettings,
             DesignSystemCatalog
         )
     }

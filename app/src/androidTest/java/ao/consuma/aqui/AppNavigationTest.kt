@@ -6,18 +6,34 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import ao.consuma.aqui.core.navigation.NavigationTestTags
+import ao.consuma.aqui.feature.launch.domain.AppLaunchStateRepository
+import ao.consuma.aqui.feature.launch.domain.InMemoryAppLaunchStateRepository
+import ao.consuma.aqui.feature.launch.di.LaunchStateModule
+import dagger.hilt.android.testing.BindValue
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
+import dagger.hilt.android.testing.UninstallModules
 import org.junit.Rule
 import org.junit.Test
 
 @HiltAndroidTest
+@UninstallModules(LaunchStateModule::class)
 class AppNavigationTest {
 
+    @BindValue
+    @JvmField
+    var appLaunchStateRepository: AppLaunchStateRepository = InMemoryAppLaunchStateRepository()
+
     @get:Rule(order = 0)
-    val hiltRule = HiltAndroidRule(this)
+    val launchStateRule = LaunchStateRule(
+        setup = { completeOnboarding() },
+        assign = { appLaunchStateRepository = it }
+    )
 
     @get:Rule(order = 1)
+    val hiltRule = HiltAndroidRule(this)
+
+    @get:Rule(order = 2)
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
     @Test
