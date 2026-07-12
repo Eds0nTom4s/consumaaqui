@@ -1,24 +1,24 @@
 RELATÓRIO: CONSUMA AQUI - DESIGN SYSTEM FOUNDATION 001
 
 Branch: android/design-system-foundation-001
-Commit base: e252c3bafca9c97dca603f08cc095fb20e6cc4a4
+Commit base: c5f2311d7ae6af66a24e0c39292f3d1d1aed0cbd
 Destino inicial DEBUG: Splash -> DesignSystemCatalog
 Destino inicial STAGING: Splash -> DesignSystemCatalog (decisão preservada)
 Destino inicial RELEASE: Splash -> Institutional
 Catálogo disponível em Release: Não; não é registado no grafo de navegação normal.
 Componentes criados: botões, campos, cartões, chips, avatar/placeholder, feedback, secção/divisor, top bar, preço e tela institucional mínima.
 Testes unitários: APROVADO; 6 executados, 0 falhas, 0 erros, 0 skipped. NavigationPolicyTest prova que Release usa Institutional e desativa o catálogo. Relatório: app/build/reports/tests/testDebugUnitTest/index.html.
-Testes instrumentados: BLOQUEADO POR AMBIENTE; 0 executados. DesignSystemComponentsTest e NavigationTest compilaram, mas não foram executados. connectedDebugAndroidTest falhou com "No connected devices!"; sem relatório de execução gerado.
-Emulador/dispositivo: Nenhum listado por `adb devices -l`; API level não disponível.
+Testes instrumentados: APROVADO; 11 executados, 0 falhas, 0 erros, 0 skipped. DesignSystemComponentsTest (9) e NavigationTest (1) confirmados; 1 teste de contexto. Relatório: app/build/reports/androidTests/connected/debug/index.html.
+Emulador/dispositivo: Samsung SM-S928U1, serial R5CX12XNNJX, Android 16/API 36. Emulador emulator-5556 offline, não utilizado.
 Lint: APROVADO; lintDebug sem erro. Relatório: app/build/reports/lint-results-debug.html.
 Assemble Debug: APROVADO.
 Assemble Staging: APROVADO.
 Assemble Release: APROVADO.
-Hardcoded colors: Nenhuma nos componentes reutilizáveis e no catálogo auditados. Cores hexadecimais existem somente na paleta/token Color.kt, por desenho.
-Hardcoded strings: Nenhum texto de produção no catálogo/componentes auditados. Exceções legítimas: valores em @Preview privados; `"/ $unit"` compõe dados fornecidos pelo chamador; rotas, test tags e nomes de ambiente não são texto visível.
-Acessibilidade: content descriptions de ícones de ação; ícones decorativos mantidos nulos para evitar duplicação; loading/disabled não clicáveis; loading anunciado; labels e erros expostos pelo Material 3; toque base de 48dp; cores semânticas com pares onColor; preço e desconto têm descrição unificada para tecnologia assistiva. Testes instrumentados de loading/preço foram adicionados, mas permanecem bloqueados sem dispositivo.
-Riscos: Contraste foi revisto semanticamente pelos pares do tema e lint, mas não medido com ferramenta dedicada em todas as combinações; testes instrumentados não foram executados, logo regressões dependentes de dispositivo ainda são risco aberto.
-Pendências: Executar connectedDebugAndroidTest num dispositivo/emulador API 26+ e confirmar DesignSystemComponentsTest e NavigationTest, com totais e relatório gerado.
-Decisão: Fundação estabilizada para código/build/lint/unitários e Release protegido; encerramento instrumental condicionado à execução em dispositivo. APROVADO COM BLOQUEIO DE AMBIENTE DOCUMENTADO.
+Hardcoded colors: 0 nos componentes reutilizáveis e catálogo auditados; pesquisa por Color/hex sem ocorrências. Hexadecimais permanecem somente na paleta/token Color.kt, por desenho.
+Hardcoded strings: 0 textos de produção. Exceções documentadas: “Primary”, “Nome” e preços somente em @Preview privados; `"/ $unit"` compõe dados do chamador; rotas/test tags/ambientes não são texto visível.
+Acessibilidade: ícones de ação descritos; avatar/placeholder aceitam descrição quando informativos e mantêm null quando decorativos; loading/disabled não clicáveis e loading anunciado; campos expõem labels e erro semântico; toque de ícone em 48dp; pares de cores semânticas; preço/desconto com anúncio unificado. Testes instrumentados de loading, erro e preço aprovados.
+Riscos: contraste foi auditado pelos pares semânticos do tema e lint, mas não medido por ferramenta dedicada em todas as combinações; a suíte instrumentada depende de dispositivo acordado/desbloqueado (a primeira tentativa com lockscreen falhou, a execução final passou integralmente).
+Pendências: nenhuma para o encerramento desta fundação; manter medição automatizada de contraste e execução instrumentada em CI como evolução.
+Decisão: APROVADO. Fundação estabilizada, Release protegido e matriz completa concluída no dispositivo API 36.
 
 Comandos: ./gradlew clean; assembleDebug; testDebugUnitTest; lintDebug; assembleStaging; assembleRelease; connectedDebugAndroidTest; git diff --check.

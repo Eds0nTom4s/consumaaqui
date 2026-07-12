@@ -27,7 +27,7 @@ A CONSUMA Aqui é a aplicação pública do consumidor dentro do ecossistema CON
 
 ## Como executar testes
 - Testes unitários: `./gradlew testDebugUnitTest`
-- Testes Compose (instrumentados): `./gradlew connectedDebugAndroidTest` (requer emulador)
+- Testes Compose (instrumentados): `./gradlew connectedDebugAndroidTest` (requer dispositivo ou emulador acordado e desbloqueado)
 
 ## Ambientes
 A aplicação suporta os seguintes ambientes:
