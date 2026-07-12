@@ -31,9 +31,9 @@ A CONSUMA Aqui é a aplicação pública do consumidor dentro do ecossistema CON
 
 ## Ambientes
 A aplicação suporta os seguintes ambientes:
-- **DEBUG**: Ambiente de desenvolvimento (local/mock).
-- **STAGING**: Ambiente de testes integrados.
-- **RELEASE**: Ambiente de produção.
+- **DEBUG**: Ambiente de desenvolvimento; após o Splash abre o catálogo do Design System.
+- **STAGING**: Ambiente de testes integrados; preserva o catálogo para validação visual.
+- **RELEASE**: Ambiente de produção; após o Splash abre somente a tela institucional mínima. O catálogo não é registado no grafo de navegação normal.
 
 ## Estrutura Inicial
 - `core/`: Componentes base (design system, ambiente, navegação, ui states, erros).
@@ -47,6 +47,7 @@ A aplicação suporta os seguintes ambientes:
 - **NÃO** usar strings hardcoded. Todas as strings devem estar em `strings.xml`.
 - **NÃO** usar cores hexadecimais espalhadas no código. Utilize os tokens e as paletas em `Theme.kt`, `Color.kt` e `SemanticColors.kt`.
 - **NÃO** usar margens e paddings arbitrários. Utilize os tokens de `ConsumaSpacing` e de `ConsumaSize`.
+- Ícones de ação devem ter descrição; ícones meramente decorativos devem evitar anúncios duplicados. Estados de loading/disabled e valores de preço/desconto devem preservar semântica acessível.
 - Catálogo de UI: Em modo de desenvolvimento, a tela `DesignSystemCatalogScreen` possibilita a auditoria de componentes e temas.
 - Avisos: URLs e secrets NÃO devem ser versionados neste repositório.
 
