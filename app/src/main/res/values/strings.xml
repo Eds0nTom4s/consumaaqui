@@ -1,3 +1,11 @@
 <resources>
-    <string name="app_name">ConsumaAqui</string>
+    <string name="app_name">CONSUMA Aqui</string>
+    <string name="splash_title">CONSUMA Aqui</string>
+    <string name="foundation_ready_title">CONSUMA AQUI</string>
+    <string name="foundation_ready_subtitle">Fundação Android configurada.</string>
+    <string name="environment_label">Ambiente: %s</string>
+    <string name="version_label">Versão: %s</string>
+    <string name="validate_navigation">Validar navegação</string>
+    <string name="navigation_success">Navegação validada com sucesso!</string>
+    <string name="try_again">Tentar Novamente</string>
 </resources>

@@ -5,10 +5,10 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class EnvironmentResolver @Inject constructor() {
-    val currentEnvironment: String
+class EnvironmentResolver @Inject constructor() : AppEnvironmentProvider {
+    override val currentEnvironment: String
         get() = BuildConfig.ENVIRONMENT
         
-    val versionName: String
+    override val versionName: String
         get() = BuildConfig.VERSION_NAME
 }

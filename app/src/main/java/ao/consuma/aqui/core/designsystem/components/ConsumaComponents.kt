@@ -44,7 +44,10 @@ fun ConsumaErrorState(
         Text(text = message, color = MaterialTheme.colorScheme.error)
         if (onRetry != null) {
             Spacer(modifier = Modifier.height(16.dp))
-            ConsumaPrimaryButton(text = "Tentar Novamente", onClick = onRetry)
+            ConsumaPrimaryButton(
+                text = androidx.compose.ui.res.stringResource(id = ao.consuma.aqui.R.string.try_again), 
+                onClick = onRetry
+            )
         }
     }
 }

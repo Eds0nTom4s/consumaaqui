@@ -1,14 +1,15 @@
 package ao.consuma.aqui.core.environment
 
-import org.junit.Assert.assertNotNull
+import ao.consuma.aqui.BuildConfig
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class EnvironmentResolverTest {
 
     @Test
-    fun `environment returns non null value`() {
+    fun `resolver returns concrete values from BuildConfig`() {
         val resolver = EnvironmentResolver()
-        assertNotNull(resolver.currentEnvironment)
-        assertNotNull(resolver.versionName)
+        assertEquals(BuildConfig.ENVIRONMENT, resolver.currentEnvironment)
+        assertEquals(BuildConfig.VERSION_NAME, resolver.versionName)
     }
 }

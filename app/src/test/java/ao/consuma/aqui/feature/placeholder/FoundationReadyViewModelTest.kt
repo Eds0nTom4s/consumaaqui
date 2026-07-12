@@ -1,20 +1,22 @@
 package ao.consuma.aqui.feature.placeholder
 
-import ao.consuma.aqui.core.environment.EnvironmentResolver
+import ao.consuma.aqui.core.environment.AppEnvironmentProvider
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class FoundationReadyViewModelTest {
 
+    private class FakeEnvironmentProvider : AppEnvironmentProvider {
+        override val currentEnvironment = "TEST_ENV"
+        override val versionName = "1.0-test"
+    }
+
     @Test
-    fun `viewModel exposes environment and version correctly`() {
-        val mockResolver = object : EnvironmentResolver() {
-            // we override logic by simply instantiating normal object or mocking, but here we can just use the actual class if not mocked, 
-            // since we don't have mockito yet, we can test it with the real one.
-        }
-        val viewModel = FoundationReadyViewModel(mockResolver)
+    fun `viewModel exposes environment and version correctly from provider`() {
+        val fakeProvider = FakeEnvironmentProvider()
+        val viewModel = FoundationReadyViewModel(fakeProvider)
         
-        assertEquals(mockResolver.currentEnvironment, viewModel.environment)
-        assertEquals(mockResolver.versionName, viewModel.version)
+        assertEquals("TEST_ENV", viewModel.environment)
+        assertEquals("1.0-test", viewModel.version)
     }
 }

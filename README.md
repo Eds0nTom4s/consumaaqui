@@ -13,7 +13,7 @@ A CONSUMA Aqui é a aplicação pública do consumidor dentro do ecossistema CON
 ## Requisitos
 - Android Studio Ladybug ou superior
 - JDK 17 (configurado no Android Studio)
-- Dispositivo ou emulador com Android 10+ (API 29+)
+- Dispositivo ou emulador com Android 8.0+ (API 26+)
 
 ## Como abrir no Android Studio
 1. Abra o Android Studio.

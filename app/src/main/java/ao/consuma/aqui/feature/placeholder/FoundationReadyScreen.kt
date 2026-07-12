@@ -15,20 +15,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
+import ao.consuma.aqui.R
 import ao.consuma.aqui.core.designsystem.components.ConsumaPrimaryButton
-import ao.consuma.aqui.core.environment.EnvironmentResolver
+import ao.consuma.aqui.core.environment.AppEnvironmentProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 @HiltViewModel
 class FoundationReadyViewModel @Inject constructor(
-    private val environmentResolver: EnvironmentResolver
+    private val environmentProvider: AppEnvironmentProvider
 ) : ViewModel() {
-    val environment: String = environmentResolver.currentEnvironment
-    val version: String = environmentResolver.versionName
+    val environment: String = environmentProvider.currentEnvironment
+    val version: String = environmentProvider.versionName
 }
 
 @Composable
@@ -45,23 +47,23 @@ fun FoundationReadyScreen(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "CONSUMA AQUI",
+            text = stringResource(id = R.string.foundation_ready_title),
             style = MaterialTheme.typography.headlineMedium
         )
         Spacer(modifier = Modifier.height(16.dp))
-        Text(text = "Fundação Android configurada.")
+        Text(text = stringResource(id = R.string.foundation_ready_subtitle))
         Spacer(modifier = Modifier.height(16.dp))
-        Text(text = "Ambiente: ${viewModel.environment}")
-        Text(text = "Versão: ${viewModel.version}")
+        Text(text = stringResource(id = R.string.environment_label, viewModel.environment))
+        Text(text = stringResource(id = R.string.version_label, viewModel.version))
         Spacer(modifier = Modifier.height(32.dp))
         ConsumaPrimaryButton(
-            text = "Validar navegação",
+            text = stringResource(id = R.string.validate_navigation),
             onClick = { isValidated = true }
         )
         if (isValidated) {
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Navegação validada com sucesso!",
+                text = stringResource(id = R.string.navigation_success),
                 color = MaterialTheme.colorScheme.primary
             )
         }
