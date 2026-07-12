@@ -1,24 +1,67 @@
 RELATÓRIO: CONSUMA AQUI - DESIGN SYSTEM FOUNDATION 001
 
+IDENTIFICAÇÃO
+
 Branch: android/design-system-foundation-001
 Commit base: c5f2311d7ae6af66a24e0c39292f3d1d1aed0cbd
+HEAD anterior à correcção 003: 18d508127569720d8c714394a1a213d39e035f04
+
+NAVEGAÇÃO E AMBIENTES
+
 Destino inicial DEBUG: Splash -> DesignSystemCatalog
 Destino inicial STAGING: Splash -> DesignSystemCatalog (decisão preservada)
 Destino inicial RELEASE: Splash -> Institutional
 Catálogo disponível em Release: Não; não é registado no grafo de navegação normal.
+Prova: NavigationPolicyTest confirma que Release usa Institutional e desactiva o catálogo.
+
+COMPONENTES
+
 Componentes criados: botões, campos, cartões, chips, avatar/placeholder, feedback, secção/divisor, top bar, preço e tela institucional mínima.
-Testes unitários: APROVADO; 6 executados, 0 falhas, 0 erros, 0 skipped. NavigationPolicyTest prova que Release usa Institutional e desativa o catálogo. Relatório: app/build/reports/tests/testDebugUnitTest/index.html.
-Testes instrumentados: APROVADO; 11 executados, 0 falhas, 0 erros, 0 skipped. DesignSystemComponentsTest (9) e NavigationTest (1) confirmados; 1 teste de contexto. Relatório: app/build/reports/androidTests/connected/debug/index.html.
+Catálogo: DesignSystemCatalogScreen cobre cores, tipografia, botões, campos, cartões, chips, avatares, preços, mensagens e estados de tela.
+
+VALIDAÇÃO
+
+Testes unitários: APROVADO; 6 executados, 0 falhas, 0 erros, 0 skipped. Relatório: app/build/reports/tests/testDebugUnitTest/index.html.
+Testes instrumentados: APROVADO; 12 executados, 0 falhas, 0 erros, 0 skipped. DesignSystemComponentsTest (9), DesignSystemCatalogTest (1), NavigationTest (1) e teste de contexto (1). Relatório: app/build/reports/androidTests/connected/debug/index.html.
+DesignSystemCatalogTest: monta DesignSystemCatalogScreen directamente em ConsumaAquiTheme; valida testTag, Botões, Campos, Cartões, scroll e secções inferiores Preços/Estados de tela, sem delays arbitrários.
 Emulador/dispositivo: Samsung SM-S928U1, serial R5CX12XNNJX, Android 16/API 36. Emulador emulator-5556 offline, não utilizado.
 Lint: APROVADO; lintDebug sem erro. Relatório: app/build/reports/lint-results-debug.html.
 Assemble Debug: APROVADO.
 Assemble Staging: APROVADO.
 Assemble Release: APROVADO.
-Hardcoded colors: 0 nos componentes reutilizáveis e catálogo auditados; pesquisa por Color/hex sem ocorrências. Hexadecimais permanecem somente na paleta/token Color.kt, por desenho.
-Hardcoded strings: 0 textos de produção. Exceções documentadas: “Primary”, “Nome” e preços somente em @Preview privados; `"/ $unit"` compõe dados do chamador; rotas/test tags/ambientes não são texto visível.
-Acessibilidade: ícones de ação descritos; avatar/placeholder aceitam descrição quando informativos e mantêm null quando decorativos; loading/disabled não clicáveis e loading anunciado; campos expõem labels e erro semântico; toque de ícone em 48dp; pares de cores semânticas; preço/desconto com anúncio unificado. Testes instrumentados de loading, erro e preço aprovados.
-Riscos: contraste foi auditado pelos pares semânticos do tema e lint, mas não medido por ferramenta dedicada em todas as combinações; a suíte instrumentada depende de dispositivo acordado/desbloqueado (a primeira tentativa com lockscreen falhou, a execução final passou integralmente).
-Pendências: nenhuma para o encerramento desta fundação; manter medição automatizada de contraste e execução instrumentada em CI como evolução.
-Decisão: APROVADO. Fundação estabilizada, Release protegido e matriz completa concluída no dispositivo API 36.
 
-Comandos: ./gradlew clean; assembleDebug; testDebugUnitTest; lintDebug; assembleStaging; assembleRelease; connectedDebugAndroidTest; git diff --check.
+AUDITORIA DE STRINGS, CORES E ACESSIBILIDADE
+
+Hardcoded colors: 0 nos componentes reutilizáveis e catálogo auditados; pesquisa por Color/hex sem ocorrências. Hexadecimais permanecem somente na paleta/token Color.kt, por desenho.
+Hardcoded strings: 0 textos de produção. Excepções documentadas: “Primary”, “Nome” e preços somente em @Preview privados; `"/ $unit"` compõe dados do chamador; rotas/test tags/ambientes não são texto visível.
+Acessibilidade: ícones de acção descritos; avatar/placeholder aceitam descrição quando informativos e mantêm null quando decorativos; loading/disabled não clicáveis e loading anunciado; campos expõem labels e erro semântico; toque de ícone em 48dp; pares de cores semânticas; preço/desconto com anúncio unificado. Testes instrumentados de loading, erro e preço aprovados.
+
+ANÁLISE ARQUITECTURAL
+
+Decisões tomadas: concentrar tokens, tema e componentes reutilizáveis em core/designsystem; manter o catálogo como ferramenta de DEBUG/STAGING; resolver o destino pós-Splash por política pura e excluir a rota do catálogo do grafo Release; manter Release numa tela institucional mínima; validar componentes isoladamente e o catálogo como composição integrada.
+
+Alternativas consideradas: usar apenas previews para validação visual; disponibilizar o catálogo em Release atrás de um controlo oculto; duplicar grafos completos por build type; testar o catálogo apenas através de MainActivity e navegação; introduzir desde já módulos comerciais no destino Release.
+
+Razões de rejeição: previews não exercitam scroll nem semântica num dispositivo; controlo oculto ainda expõe código de desenvolvimento por navegação de produção; grafos duplicados aumentam divergência e manutenção; teste apenas end-to-end dificulta localizar falhas de composição; módulos comerciais excedem o escopo da fundação.
+
+Impacto futuro: novos componentes podem reutilizar os mesmos tokens, tema, estados e testes; a política de navegação permite substituir Institutional pelo App Shell sem reabrir o catálogo em Release; alterações no catálogo passam a ter cobertura direta de composição e scroll.
+
+Riscos técnicos: contraste foi auditado pelos pares semânticos do tema e lint, mas não medido por ferramenta dedicada em todas as combinações; a suíte instrumentada depende de dispositivo acordado/desbloqueado; strings de preço continuam formatadas pelo chamador e exigirão uma política de moeda/localização na camada apropriada.
+
+Oportunidades de reutilização: botões, campos, cartões, chips, feedback, top bar, avatar e preço podem sustentar App Shell e futuras features; NavigationPolicy pode evoluir para uma política tipada de ambientes; DesignSystemCatalogTest serve como smoke test integrado para regressões do catálogo.
+
+RISCOS, PENDÊNCIAS E DECISÃO
+
+Riscos: permanecem a medição automatizada de contraste e a dependência de infraestrutura Android disponível, acordada e desbloqueada para testes instrumentados.
+Pendências: nenhuma para o encerramento desta fundação; medição automatizada de contraste e execução instrumentada em CI ficam como evolução. APP-SHELL-NAVIGATION-001 não faz parte desta entrega.
+Decisão: APROVADO. Fundação estabilizada, Release protegido, catálogo validado directamente e matriz completa concluída no dispositivo API 36.
+
+COMANDOS DE VALIDAÇÃO
+
+./gradlew testDebugUnitTest
+./gradlew lintDebug
+./gradlew assembleDebug
+./gradlew assembleStaging
+./gradlew assembleRelease
+./gradlew connectedDebugAndroidTest
+git diff --check
