@@ -12,5 +12,9 @@ object NavigationTestTags {
     const val INITIALIZATION = "initialization_screen"
     const val SPLASH = "splash_screen"
     const val BOTTOM_NAVIGATION = "bottom_navigation"
+    const val BOTTOM_NAV_HOME = "bottom_nav_home"
+    const val BOTTOM_NAV_SEARCH = "bottom_nav_search"
+    const val BOTTOM_NAV_ORDERS = "bottom_nav_orders"
+    const val BOTTOM_NAV_MORE = "bottom_nav_more"
     const val APP_SHELL = "app_shell"
 }

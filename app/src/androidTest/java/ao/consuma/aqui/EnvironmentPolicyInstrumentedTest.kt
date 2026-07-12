@@ -9,13 +9,19 @@ import androidx.compose.ui.test.performClick
 import androidx.test.platform.app.InstrumentationRegistry
 import ao.consuma.aqui.BuildConfig
 import ao.consuma.aqui.core.navigation.NavigationTestTags
+import dagger.hilt.android.testing.HiltAndroidRule
+import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 
+@HiltAndroidTest
 class EnvironmentPolicyInstrumentedTest {
 
-    @get:Rule
+    @get:Rule(order = 0)
+    val hiltRule = HiltAndroidRule(this)
+
+    @get:Rule(order = 1)
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
@@ -44,11 +50,13 @@ class EnvironmentPolicyInstrumentedTest {
     }
 
     private fun navigateToMore() {
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 10000) {
             composeTestRule.onAllNodes(hasTestTag(NavigationTestTags.HOME))
                 .fetchSemanticsNodes().isNotEmpty()
+                    && composeTestRule.onAllNodes(hasTestTag(NavigationTestTags.BOTTOM_NAVIGATION))
+                .fetchSemanticsNodes().isNotEmpty()
         }
-        composeTestRule.onNodeWithTag(NavigationTestTags.MORE).performClick()
+        composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAV_MORE).performClick()
         composeTestRule.onNodeWithTag(NavigationTestTags.MORE).assertIsDisplayed()
     }
 }

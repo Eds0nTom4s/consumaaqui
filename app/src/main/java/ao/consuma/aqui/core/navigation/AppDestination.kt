@@ -52,25 +52,25 @@ val topLevelDestinations = listOf(
         destination = AppDestination.Home,
         label = R.string.nav_home,
         icon = Icons.Default.Home,
-        testTag = NavigationTestTags.HOME
+        testTag = NavigationTestTags.BOTTOM_NAV_HOME
     ),
     TopLevelDestination(
         destination = AppDestination.Search,
         label = R.string.nav_search,
         icon = Icons.Default.Search,
-        testTag = NavigationTestTags.SEARCH
+        testTag = NavigationTestTags.BOTTOM_NAV_SEARCH
     ),
     TopLevelDestination(
         destination = AppDestination.Orders,
         label = R.string.nav_orders,
         icon = Icons.Default.ShoppingCart,
-        testTag = NavigationTestTags.ORDERS
+        testTag = NavigationTestTags.BOTTOM_NAV_ORDERS
     ),
     TopLevelDestination(
         destination = AppDestination.More,
         label = R.string.nav_more,
         icon = Icons.Default.Menu,
-        testTag = NavigationTestTags.MORE
+        testTag = NavigationTestTags.BOTTOM_NAV_MORE
     )
 )
 

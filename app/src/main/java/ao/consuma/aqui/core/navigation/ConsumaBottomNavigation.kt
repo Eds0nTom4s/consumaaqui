@@ -39,10 +39,12 @@ fun ConsumaBottomNavigation(
                 label = { Text(text = label) },
                 selected = selected,
                 onClick = { appState.navigateToTopLevelDestination(destination.destination) },
-                modifier = Modifier.semantics {
-                    contentDescription = label
-                    stateDescription = if (selected) selectedDescription else unselectedDescription
-                }
+                modifier = Modifier
+                    .testTag(destination.testTag)
+                    .semantics {
+                        contentDescription = label
+                        stateDescription = if (selected) selectedDescription else unselectedDescription
+                    }
             )
         }
     }

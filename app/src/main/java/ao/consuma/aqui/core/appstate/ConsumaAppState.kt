@@ -11,7 +11,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import ao.consuma.aqui.core.navigation.AppDestination
-import ao.consuma.aqui.core.navigation.bottomNavigationVisible
 import ao.consuma.aqui.core.navigation.topLevelDestinations
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -34,16 +33,19 @@ class ConsumaAppState(
         }
 
     val isBottomNavigationVisible: Boolean
-        @Composable get() = currentTopLevelDestination != null
+        @Composable get() = when (currentDestination?.route) {
+            AppDestination.Home.route,
+            AppDestination.Search.route,
+            AppDestination.Orders.route,
+            AppDestination.More.route -> true
+            else -> false
+        }
 
     val topLevelDestinations: List<ao.consuma.aqui.core.navigation.TopLevelDestination>
         get() = ao.consuma.aqui.core.navigation.topLevelDestinations
 
     fun navigateToTopLevelDestination(destination: AppDestination) {
         navController.navigate(destination.route) {
-            popUpTo(navController.graph.findStartDestination().id) {
-                saveState = true
-            }
             launchSingleTop = true
             restoreState = true
         }

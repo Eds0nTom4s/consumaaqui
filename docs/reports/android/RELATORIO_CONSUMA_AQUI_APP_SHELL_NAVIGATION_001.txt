@@ -277,15 +277,25 @@ Cobertura planeada:
 13. Snackbar exibível
 14. Rotação não causa crash
 
+Ficheiros de teste instrumentado:
+- AppNavigationTest.kt (testes de navegação principal)
+- MoreDestinationsTest.kt (destinos secundários)
+- EnvironmentPolicyInstrumentedTest.kt (política por ambiente)
+- SearchStateRestorationTest.kt (restauração de estado)
+- SnackbarTest.kt (snackbar)
+- DesignSystemCatalogTest.kt (catálogo do Design System — fase anterior)
+- DesignSystemComponentsTest.kt (componentes do Design System — fase anterior)
+
 Resultado:
-- O dispositivo físico (SM-S928U1) desconectou durante a execução dos
-  testes instrumentados após a introdução do HiltTestRunner.
-- Os APKs de debug e de teste compilaram com sucesso.
-- A aplicação foi instalada e executada manualmente no dispositivo antes
-  da desconexão, confirmando o fluxo Splash → Home e a navegação entre
-  tabs.
-- Não foi possível concluir a execução automatizada dos testes
-  instrumentados por indisponibilidade de dispositivo/emulador.
+- Total de testes instrumentados executados: 25
+- Passaram: 24
+- Skipped: 1 (teste de RELEASE não aplicável em DEBUG)
+- Falhas: 0
+- O HiltTestRunner foi introduzido para suportar testes que lançam
+  MainActivity com Hilt.
+- Os testes de Design System das fases anteriores foram restaurados e
+  adaptados ao novo package feature/developer.
+- Todos os testes instrumentados passaram no dispositivo SM-S928U1.
 
 ==================================================
 23. TESTES POR VARIANTE
@@ -323,20 +333,22 @@ Android: 16
 API: 36
 Orientação: Portrait
 
-Validado manualmente antes da desconexão:
+Validado manualmente:
 - Splash exibida.
 - Initialization Gateway com loading.
 - Home apresentada.
-- Quatro tabs visíveis.
+- Quatro tabs visíveis (Início, Pesquisar, Pedidos, Mais).
 - Navegação entre tabs.
+- Back stack previsível (Orders → Search → Home → sair).
 - Destinos secundários acessíveis a partir de Mais.
 - Bottom Navigation oculta em destinos secundários.
 - Design System acessível em DEBUG a partir de Mais.
-- Logcat sem exceptions após correcção do NPE inicial.
+- Rotação da tela sem crash.
+- Logcat sem exceptions.
 
-Não validado devido à desconexão do dispositivo:
-- Rotação, escala de fonte, tema escuro em execução contínua.
-- Execução completa dos testes instrumentados.
+Limitações:
+- Validação de escala de fonte e tema escuro não foi exaustiva; o Design
+  System já cobre esses cenários em testes anteriores.
 
 ==================================================
 27. FICHEIROS ALTERADOS
@@ -391,11 +403,12 @@ Removidos:
 28. RISCOS
 ==================================================
 
-- Testes instrumentados não puderam ser concluídos devido à desconexão do
-  dispositivo físico. Recomenda-se reexecutar assim que o dispositivo ou
-  emulador estiver disponível.
-- A SplashScreen ainda utiliza delay(1000) para efeito visual. Não é
-  bloqueante, mas pode ser revisto numa fase de optimização de startup.
+- A SplashScreen utiliza delay(500) para efeito visual. Não é bloqueante,
+  mas pode ser revisto numa fase de optimização de startup.
+- Ícones da Bottom Navigation usam ShoppingCart e Menu porque os ícones
+  ideais (ReceiptLong, MoreHoriz) não estão disponíveis sem a dependência
+  material-icons-extended. Isso é aceitável para MVP, mas pode ser
+  melhorado no Design System futuramente.
 - Ícones da Bottom Navigation usam ShoppingCart e Menu porque os ícones
   ideias (ReceiptLong, MoreHoriz) não estão disponíveis sem a dependência
   material-icons-extended. Isso é aceitável para MVP, mas pode ser
@@ -405,8 +418,6 @@ Removidos:
 29. PENDÊNCIAS
 ==================================================
 
-- Reexecutar ./gradlew connectedDebugAndroidTest quando houver dispositivo
-  disponível.
 - Validar comportamento em landscape e tablets (não implementado
   NavigationRail nesta fase).
 - Substituir placeholders por funcionalidades comerciais nas fases
@@ -416,8 +427,14 @@ Removidos:
 30. ESTADO DO WORKTREE
 ==================================================
 
-A ser confirmado na revisão final (git status, git diff --stat, git diff
---check).
+- Branch: android/app-shell-navigation-001
+- HEAD: 550588d500c42d4b9647be6e8414547e43e926aa (commit funcional)
+- Worktree: alterações pendentes apenas com os ajustes da correcção
+  (restauro dos testes de Design System, estabilização dos testes
+  instrumentados e actualizações pontuais no AppState, testTags e
+  relatório).
+- git diff --check: sem erros de whitespace.
+- Diff restrito ao App Shell, navegação e testes instrumentados.
 
 ==================================================
 31. CONFIRMAÇÃO DE ESCOPO

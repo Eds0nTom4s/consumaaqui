@@ -46,7 +46,8 @@ fun SearchScreen(modifier: Modifier = Modifier) {
             ConsumaSearchField(
                 query = query,
                 onQueryChange = { query = it },
-                placeholder = stringResource(R.string.search_placeholder)
+                placeholder = stringResource(R.string.search_placeholder),
+                modifier = Modifier.testTag("search_field")
             )
             if (query.isBlank()) {
                 ConsumaEmptyState(
