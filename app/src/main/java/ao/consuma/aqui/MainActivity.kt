@@ -5,8 +5,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.navigation.compose.rememberNavController
-import ao.consuma.aqui.core.navigation.ConsumaAquiNavHost
 import ao.consuma.aqui.core.designsystem.theme.ConsumaAquiTheme
+import ao.consuma.aqui.core.navigation.NavigationPolicy
+import ao.consuma.aqui.core.navigation.RootNavigation
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -16,8 +17,13 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ConsumaAquiTheme {
-                val navController = rememberNavController()
-                ConsumaAquiNavHost(navController = navController)
+                val rootNavController = rememberNavController()
+                RootNavigation(
+                    rootNavController = rootNavController,
+                    isDesignSystemCatalogEnabled = NavigationPolicy.isDesignSystemCatalogEnabled(
+                        BuildConfig.ENVIRONMENT
+                    )
+                )
             }
         }
     }

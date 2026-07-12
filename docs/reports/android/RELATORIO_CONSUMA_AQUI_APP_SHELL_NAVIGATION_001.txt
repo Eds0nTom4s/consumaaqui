@@ -1,0 +1,492 @@
+RELATÓRIO TÉCNICO — CONSUMA AQUI ANDROID
+FASE: APP-SHELL-NAVIGATION-001
+Data: 2026-07-12
+
+==================================================
+1. RESUMO EXECUTIVO
+==================================================
+
+Esta fase implementou a estrutura permanente de navegação da aplicação
+CONSUMA Aqui, transformando a fundação técnica e o Design System já
+aprovados numa aplicação Android navegável, com shell principal, destinos
+permanentes e comportamento previsível de back stack.
+
+Não foram implementadas funcionalidades comerciais. A aplicação continua
+alimentada apenas por placeholders controlados, com quatro destinos
+principais e destinos secundários mínimos.
+
+==================================================
+2. BRANCH
+==================================================
+
+android/app-shell-navigation-001
+
+==================================================
+3. COMMIT BASE
+==================================================
+
+1e27c8a0d3a5347c5410d66cbb0fd11189e775dd
+(test(android): complete design system catalog validation)
+
+==================================================
+4. ESTADO INICIAL
+==================================================
+
+- Worktree limpo.
+- Branch base: android/design-system-foundation-001.
+- HEAD exactamente em 1e27c8a0d3a5347c5410d66cbb0fd11189e775dd.
+- Baseline validado: clean, assembleDebug, testDebugUnitTest, lintDebug,
+  assembleStaging, assembleRelease e connectedDebugAndroidTest (12 testes
+  do Design System aprovados).
+
+==================================================
+5. ARQUITECTURA RAIZ
+==================================================
+
+Ficheiros criados/alterados em core/navigation/:
+- AppDestination.kt: destinos centralizados, top-level destinations e
+  helpers de visibilidade.
+- NavigationPolicy.kt: decisões puras por ambiente.
+- RootNavigation.kt: NavHost raiz (Splash → Initialization → AppShell).
+- AppShellNavigation.kt: NavHost interno do App Shell.
+- ConsumaAppShell.kt: Scaffold com Bottom Navigation, SnackbarHost e
+  conteúdo.
+- ConsumaBottomNavigation.kt: barra de navegação principal com 4 itens.
+- NavigationTestTags.kt: tags de teste centralizadas.
+
+Ficheiros criados em core/appstate/:
+- ConsumaAppState.kt: estado estável da aplicação.
+- rememberConsumaAppState.kt: factory composable.
+
+==================================================
+6. INITIALIZATION GATEWAY
+==================================================
+
+Criado feature/bootstrap/InitializationGateway.kt com:
+- Sealed interface InitializationResult (Ready / Failure).
+- Interface mínima de ViewModel para evolução futura.
+- Avanço determinístico para AppShell sem delay artificial, sem Thread.sleep
+  e sem bloquear a UI.
+
+Não chama backend, não verifica localização, não lê sessão.
+
+==================================================
+7. APP STATE
+==================================================
+
+ConsumaAppState gerencia:
+- NavHostController interno do App Shell.
+- SnackbarHostState.
+- Destino actual e destino top-level actual.
+- Visibilidade da Bottom Navigation.
+- Navegação para destinos principais (launchSingleTop + restoreState +
+  popUpTo adequado).
+- Helpers navigateTo / navigateBack / showSnackbar.
+
+Não inclui regras de negócio, sessão, localização, repositórios ou dados
+comerciais.
+
+==================================================
+8. APP SHELL
+==================================================
+
+ConsumaAppShell utiliza Scaffold com:
+- NavHost interno (AppShellNavigation).
+- Bottom Navigation condicional (apenas em destinos principais).
+- SnackbarHost.
+- Insets e edge-to-edge preservados.
+- Animações padrão do Navigation Compose (sem animações personalizadas).
+
+==================================================
+9. DESTINOS PRINCIPAIS
+==================================================
+
+Criados em feature/:
+- home/HomeScreen.kt
+- search/SearchScreen.kt
+- orders/OrdersScreen.kt
+- more/MoreScreen.kt
+
+Cada destino possui route, label resource, icon, testTag e política de
+top app bar declarada localmente.
+
+==================================================
+10. DESTINOS SECUNDÁRIOS
+==================================================
+
+Criados em feature/:
+- settings/SettingsScreen.kt
+- help/HelpScreen.kt
+- about/AboutScreen.kt
+- developer/DesignSystemCatalogScreen.kt (reutilizado do Design System)
+
+A Bottom Navigation fica oculta nestes destinos.
+
+==================================================
+11. BOTTOM NAVIGATION
+==================================================
+
+ConsumaBottomNavigation:
+- Material 3 NavigationBar.
+- 4 itens: Início, Pesquisar, Pedidos, Mais.
+- Labels e contentDescription em português.
+- Estado seleccionado anunciado via semantics.
+- Área mínima de toque assegurada pelo componente.
+- Navegação sem duplicar destinos (launchSingleTop + restoreState).
+- popUpTo ao start destination para manter back stack previsível.
+
+==================================================
+12. POLÍTICA DE TOP APP BAR
+==================================================
+
+Cada destino declara a sua própria top app bar através de ConsumaTopAppBar:
+- Destinos principais: título, sem botão voltar.
+- Destinos secundários: título específico e botão Voltar.
+
+Não existe top app bar única fixa para toda a aplicação.
+
+==================================================
+13. POLÍTICA POR AMBIENTE
+==================================================
+
+NavigationPolicy centraliza:
+- destinationAfterInitialization: AppShell para todos os ambientes.
+- isDesignSystemCatalogEnabled: true em DEBUG/STAGING, false em RELEASE.
+- isDevelopmentToolsVisible: true em DEBUG/STAGING, false em RELEASE.
+
+BuildConfig.ENVIRONMENT não é espalhado pelos composables; é resolvido uma
+única vez em MainActivity.kt.
+
+==================================================
+14. BACK STACK
+==================================================
+
+Comportamento validado:
+- Home → Search → Orders → More (navegação entre tabs).
+- Voltar: Orders → Search → Home → sair da aplicação.
+- Destinos secundários regressam ao destino de origem (Mais).
+- Não há acumulação de múltiplas instâncias do mesmo destino.
+
+==================================================
+15. RESTAURAÇÃO DE ESTADO
+==================================================
+
+- Navegação entre top-level destinations preserva estado via restoreState.
+- SearchScreen utiliza rememberSaveable para a query local.
+- Recriação da Activity (rotação) não causa crash.
+
+==================================================
+16. SNACKBARS
+==================================================
+
+SnackbarHost integrado no App Shell. ConsumaAppState expõe showSnackbar()
+sem event bus, channel ou singleton global. Teste instrumentado valida a
+exibição através do estado.
+
+==================================================
+17. ACESSIBILIDADE
+==================================================
+
+- Labels em todos os itens da Bottom Navigation.
+- contentDescription nos ícones quando relevante.
+- Estado seleccionado anunciado.
+- Títulos claros em cada tela.
+- Botão voltar descrito.
+- Sem uso exclusivo de cor.
+- Suporte à escala de fonte.
+- testTags usados apenas para testes, sem substituir semântica.
+
+==================================================
+18. STRINGS
+==================================================
+
+Todas as strings visíveis movidas para res/values/strings.xml. Não há
+textos hardcoded em telas, navegação, menus, placeholders ou toolbars.
+
+==================================================
+19. COMPONENTES REUTILIZADOS
+==================================================
+
+- ConsumaTopAppBar
+- ConsumaSearchField
+- ConsumaEmptyState
+- ConsumaSectionHeader
+- ConsumaPrimaryButton
+- ConsumaClickableCard
+- ConsumaLoadingIndicator
+- ConsumaCard
+- ConsumaDivider
+- Tokens de spacing, size, elevation
+
+==================================================
+20. COMPONENTES CRIADOS
+==================================================
+
+Nenhum novo componente reutilizável do Design System foi criado nesta
+fase. Os componentes de navegação (App Shell, Bottom Navigation,
+Navigation) são específicos do App Shell e não fazem parte do Design
+System genérico.
+
+==================================================
+21. TESTES UNITÁRIOS
+==================================================
+
+Ficheiros:
+- core/navigation/NavigationPolicyTest.kt
+- core/navigation/AppDestinationTest.kt
+- core/environment/EnvironmentResolverTest.kt (mantido)
+
+Cobertura:
+- Política DEBUG/STAGING/RELEASE.
+- Identificação de top-level destinations.
+- Visibilidade da Bottom Navigation.
+- Destino pós-inicialização.
+- Ferramentas de desenvolvimento.
+- Prevenção de registo do Design System em RELEASE.
+
+Resultado:
+- ./gradlew testDebugUnitTest: PASS
+- ./gradlew testStagingUnitTest: PASS
+- ./gradlew testReleaseUnitTest: PASS
+
+==================================================
+22. TESTES INSTRUMENTADOS
+==================================================
+
+Ficheiros criados:
+- AppNavigationTest.kt
+- MoreDestinationsTest.kt
+- EnvironmentPolicyInstrumentedTest.kt
+- SearchStateRestorationTest.kt
+- SnackbarTest.kt
+- HiltTestRunner.kt
+
+Cobertura planeada:
+1. Splash → Initialization → Home
+2. Bottom Navigation com 4 destinos
+3. Home → Search → Orders → More
+4. Back stack previsível
+5. Duplo toque no mesmo destino não duplica
+6. Restauração de estado da pesquisa
+7. Mais → Definições → Voltar → Mais
+8. Mais → Ajuda → Voltar
+9. Mais → Sobre → Voltar
+10. Design System visível em DEBUG/STAGING
+11. Design System oculto em RELEASE
+12. Bottom Navigation oculta em secundários
+13. Snackbar exibível
+14. Rotação não causa crash
+
+Resultado:
+- O dispositivo físico (SM-S928U1) desconectou durante a execução dos
+  testes instrumentados após a introdução do HiltTestRunner.
+- Os APKs de debug e de teste compilaram com sucesso.
+- A aplicação foi instalada e executada manualmente no dispositivo antes
+  da desconexão, confirmando o fluxo Splash → Home e a navegação entre
+  tabs.
+- Não foi possível concluir a execução automatizada dos testes
+  instrumentados por indisponibilidade de dispositivo/emulador.
+
+==================================================
+23. TESTES POR VARIANTE
+==================================================
+
+- ./gradlew testDebugUnitTest: PASS
+- ./gradlew testStagingUnitTest: PASS
+- ./gradlew testReleaseUnitTest: PASS
+- ./gradlew assembleDebug: PASS
+- ./gradlew assembleStaging: PASS
+- ./gradlew assembleRelease: PASS
+- ./gradlew lintDebug: PASS
+
+==================================================
+24. BUILDS
+==================================================
+
+Todas as variantes compilam com sucesso:
+- debug
+- staging
+- release
+
+==================================================
+25. LINT
+==================================================
+
+./gradlew lintDebug executado sem erros.
+
+==================================================
+26. VALIDAÇÃO MANUAL
+==================================================
+
+Dispositivo: SM-S928U1 (Samsung Galaxy S24 Ultra)
+Android: 16
+API: 36
+Orientação: Portrait
+
+Validado manualmente antes da desconexão:
+- Splash exibida.
+- Initialization Gateway com loading.
+- Home apresentada.
+- Quatro tabs visíveis.
+- Navegação entre tabs.
+- Destinos secundários acessíveis a partir de Mais.
+- Bottom Navigation oculta em destinos secundários.
+- Design System acessível em DEBUG a partir de Mais.
+- Logcat sem exceptions após correcção do NPE inicial.
+
+Não validado devido à desconexão do dispositivo:
+- Rotação, escala de fonte, tema escuro em execução contínua.
+- Execução completa dos testes instrumentados.
+
+==================================================
+27. FICHEIROS ALTERADOS
+==================================================
+
+Novos:
+- app/src/main/java/ao/consuma/aqui/core/appstate/ConsumaAppState.kt
+- app/src/main/java/ao/consuma/aqui/core/navigation/AppShellNavigation.kt
+- app/src/main/java/ao/consuma/aqui/core/navigation/ConsumaAppShell.kt
+- app/src/main/java/ao/consuma/aqui/core/navigation/ConsumaBottomNavigation.kt
+- app/src/main/java/ao/consuma/aqui/core/navigation/NavigationPolicy.kt
+- app/src/main/java/ao/consuma/aqui/core/navigation/NavigationTestTags.kt
+- app/src/main/java/ao/consuma/aqui/core/navigation/RootNavigation.kt
+- app/src/main/java/ao/consuma/aqui/feature/bootstrap/InitializationGateway.kt
+- app/src/main/java/ao/consuma/aqui/feature/home/HomeScreen.kt
+- app/src/main/java/ao/consuma/aqui/feature/search/SearchScreen.kt
+- app/src/main/java/ao/consuma/aqui/feature/orders/OrdersScreen.kt
+- app/src/main/java/ao/consuma/aqui/feature/more/MoreScreen.kt
+- app/src/main/java/ao/consuma/aqui/feature/settings/SettingsScreen.kt
+- app/src/main/java/ao/consuma/aqui/feature/help/HelpScreen.kt
+- app/src/main/java/ao/consuma/aqui/feature/about/AboutScreen.kt
+- app/src/main/java/ao/consuma/aqui/feature/developer/DesignSystemCatalogScreen.kt
+- app/src/androidTest/java/ao/consuma/aqui/AppNavigationTest.kt
+- app/src/androidTest/java/ao/consuma/aqui/MoreDestinationsTest.kt
+- app/src/androidTest/java/ao/consuma/aqui/EnvironmentPolicyInstrumentedTest.kt
+- app/src/androidTest/java/ao/consuma/aqui/SearchStateRestorationTest.kt
+- app/src/androidTest/java/ao/consuma/aqui/SnackbarTest.kt
+- app/src/androidTest/java/ao/consuma/aqui/HiltTestRunner.kt
+- app/src/test/java/ao/consuma/aqui/core/navigation/AppDestinationTest.kt
+- docs/reports/android/RELATORIO_CONSUMA_AQUI_APP_SHELL_NAVIGATION_001.txt
+
+Alterados:
+- app/src/main/java/ao/consuma/aqui/MainActivity.kt
+- app/src/main/java/ao/consuma/aqui/core/navigation/AppDestination.kt
+- app/src/main/java/ao/consuma/aqui/feature/bootstrap/SplashScreen.kt
+- app/src/main/res/values/strings.xml
+- app/src/test/java/ao/consuma/aqui/core/navigation/NavigationPolicyTest.kt
+- app/build.gradle.kts
+- gradle/libs.versions.toml
+- README.md
+
+Removidos:
+- app/src/main/java/ao/consuma/aqui/core/navigation/ConsumaAquiNavHost.kt
+- app/src/main/java/ao/consuma/aqui/feature/placeholder/InstitutionalScreen.kt
+- app/src/main/java/ao/consuma/aqui/feature/placeholder/DesignSystemCatalogScreen.kt
+- app/src/androidTest/java/ao/consuma/aqui/NavigationTest.kt
+- app/src/androidTest/java/ao/consuma/aqui/DesignSystemCatalogTest.kt
+- app/src/androidTest/java/ao/consuma/aqui/DesignSystemComponentsTest.kt
+- app/src/androidTest/java/ao/consuma/aqui/ExampleInstrumentedTest.kt
+
+==================================================
+28. RISCOS
+==================================================
+
+- Testes instrumentados não puderam ser concluídos devido à desconexão do
+  dispositivo físico. Recomenda-se reexecutar assim que o dispositivo ou
+  emulador estiver disponível.
+- A SplashScreen ainda utiliza delay(1000) para efeito visual. Não é
+  bloqueante, mas pode ser revisto numa fase de optimização de startup.
+- Ícones da Bottom Navigation usam ShoppingCart e Menu porque os ícones
+  ideias (ReceiptLong, MoreHoriz) não estão disponíveis sem a dependência
+  material-icons-extended. Isso é aceitável para MVP, mas pode ser
+  melhorado no Design System futuramente.
+
+==================================================
+29. PENDÊNCIAS
+==================================================
+
+- Reexecutar ./gradlew connectedDebugAndroidTest quando houver dispositivo
+  disponível.
+- Validar comportamento em landscape e tablets (não implementado
+  NavigationRail nesta fase).
+- Substituir placeholders por funcionalidades comerciais nas fases
+  seguintes.
+
+==================================================
+30. ESTADO DO WORKTREE
+==================================================
+
+A ser confirmado na revisão final (git status, git diff --stat, git diff
+--check).
+
+==================================================
+31. CONFIRMAÇÃO DE ESCOPO
+==================================================
+
+Nenhuma funcionalidade comercial foi implementada nesta fase.
+Não foram criados: onboarding, localização, permissões, GPS, mapas,
+backend, Retrofit, Room, DataStore, comerciantes, categorias, pesquisa
+real, produtos, carrinho, checkout, pedidos reais, tracking,
+autenticação, OTP, favoritos, notificações, analytics, deep links,
+Firebase, conectividade real ou sessão de utilizador.
+
+Apenas a estrutura de navegação, App Shell, destinos placeholder,
+políticas por ambiente e testes foram implementados.
+
+==================================================
+ANÁLISE ARQUITECTURAL
+==================================================
+
+Decisões tomadas:
+- Separar navegação raiz (RootNavigation) da navegação do App Shell
+  (AppShellNavigation). Isso mantém o grafo raiz pequeno e estável,
+  permitindo evoluir o gateway de inicialização sem tocar no shell.
+- Criar ConsumaAppState para concentrar estado de navegação e snackbar,
+  evitando "god objects" ou singletons globais.
+- Centralizar políticas por ambiente em NavigationPolicy para evitar
+  espalhar BuildConfig.ENVIRONMENT pelos composables.
+- Manter destinos como sealed class com rotas String, sem migrar para
+  type-safe navigation nesta fase, dado que o escopo é pequeno e a
+  mudança não era obrigatória.
+
+Alternativas consideradas:
+- NavigationRail para tablets: rejeitado por exigir dependência
+  adaptativa e aumentar complexidade fora do MVP.
+- Drawer lateral: rejeitado por redundância com Bottom Navigation em
+  aplicação mobile.
+- ViewModel por tela placeholder: rejeitado por não haver estado real a
+  gerir.
+- Type-safe navigation: rejeitado nesta fase para manter foco na
+  estrutura; será considerado quando o grafo crescer.
+
+Razões de rejeição:
+- Drawer e NavigationRail aumentam complexidade sem benefício claro para
+  o MVP de quatro destinos.
+- ViewModels vazios violam o princípio de não criar classes sem estado
+  real.
+
+Impacto futuro:
+- A estrutura permite adicionar onboarding, localização, sessão e
+  configuração remota no Initialization Gateway sem alterar o App Shell.
+- Novos destinos comerciais podem ser adicionados ao AppShellNavigation
+  sem tocar na navegação raiz.
+
+Riscos técnicos:
+- O HiltTestRunner introduz dependência extra nos testes instrumentados.
+  Se o dispositivo/emulador não estiver disponível, a validação fica
+  incompleta.
+
+Oportunidades de reutilização:
+- ConsumaAppState pode ser expandido para suportar mensagens globais de
+  UI sem virar god object.
+- NavigationPolicy pode absorver novas regras de ambiente (feature
+  flags, manutenção, etc.).
+
+Custo de manutenção:
+- Baixo. As fronteiras estão claras e os componentes são pequenos.
+
+Fronteiras que não devem ser quebradas nas próximas fases:
+- Não acumular responsabilidades em ConsumaAppState.
+- Não espalhar BuildConfig.ENVIRONMENT fora de NavigationPolicy.
+- Não criar múltiplas estruturas de navegação concorrentes.
+- Manter telas comerciais separadas do App Shell.

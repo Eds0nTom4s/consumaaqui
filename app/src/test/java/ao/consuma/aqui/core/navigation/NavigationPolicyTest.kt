@@ -6,23 +6,40 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class NavigationPolicyTest {
+
     @Test
-    fun `release destination after splash is institutional and catalog is disabled`() {
-        assertEquals(
-            AppDestination.Institutional,
-            NavigationPolicy.destinationAfterSplash("RELEASE")
-        )
+    fun `destination after initialization is AppShell for all environments`() {
+        listOf(
+            NavigationPolicy.Environment.DEBUG,
+            NavigationPolicy.Environment.STAGING,
+            NavigationPolicy.Environment.RELEASE
+        ).forEach { environment ->
+            assertEquals(
+                AppDestination.AppShell,
+                NavigationPolicy.destinationAfterInitialization(environment)
+            )
+        }
+    }
+
+    @Test
+    fun `design system catalog is enabled in debug and staging`() {
+        assertTrue(NavigationPolicy.isDesignSystemCatalogEnabled("DEBUG"))
+        assertTrue(NavigationPolicy.isDesignSystemCatalogEnabled("STAGING"))
+    }
+
+    @Test
+    fun `design system catalog is disabled in release`() {
         assertFalse(NavigationPolicy.isDesignSystemCatalogEnabled("RELEASE"))
     }
 
     @Test
-    fun `debug and staging destination after splash is catalog`() {
-        listOf("DEBUG", "STAGING").forEach { environment ->
-            assertEquals(
-                AppDestination.DesignSystemCatalog,
-                NavigationPolicy.destinationAfterSplash(environment)
-            )
-            assertTrue(NavigationPolicy.isDesignSystemCatalogEnabled(environment))
-        }
+    fun `development tools are visible in debug and staging`() {
+        assertTrue(NavigationPolicy.isDevelopmentToolsVisible("DEBUG"))
+        assertTrue(NavigationPolicy.isDevelopmentToolsVisible("STAGING"))
+    }
+
+    @Test
+    fun `development tools are hidden in release`() {
+        assertFalse(NavigationPolicy.isDevelopmentToolsVisible("RELEASE"))
     }
 }

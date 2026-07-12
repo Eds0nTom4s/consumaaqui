@@ -1,4 +1,4 @@
-package ao.consuma.aqui.feature.placeholder
+package ao.consuma.aqui.feature.developer
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -35,6 +35,7 @@ import ao.consuma.aqui.core.designsystem.components.ConsumaTextButton
 import ao.consuma.aqui.core.designsystem.components.ConsumaTextField
 import ao.consuma.aqui.core.designsystem.components.ConsumaTopAppBar
 import ao.consuma.aqui.core.designsystem.tokens.ConsumaSpacing
+import ao.consuma.aqui.core.navigation.NavigationTestTags
 
 @Composable
 fun DesignSystemCatalogScreen(
@@ -47,7 +48,7 @@ fun DesignSystemCatalogScreen(
                 onBackClick = onNavigateBack
             )
         },
-        modifier = Modifier.testTag("design_system_catalog")
+        modifier = Modifier.testTag(NavigationTestTags.DESIGN_SYSTEM_CATALOG)
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -67,7 +68,7 @@ fun DesignSystemCatalogScreen(
             Text(text = stringResource(R.string.catalog_title_medium), style = MaterialTheme.typography.titleMedium)
             Text(text = stringResource(R.string.catalog_body_medium), style = MaterialTheme.typography.bodyMedium)
             Text(text = stringResource(R.string.catalog_label_small), style = MaterialTheme.typography.labelSmall)
-            
+
             ConsumaDivider()
 
             ConsumaSectionHeader(title = stringResource(R.string.catalog_buttons_title))
@@ -93,12 +94,12 @@ fun DesignSystemCatalogScreen(
             ConsumaFilterChip(selected = true, onClick = {}, label = stringResource(R.string.catalog_filter_nearby))
             ConsumaStatusChip(text = stringResource(R.string.catalog_success), semantic = ConsumaStatusSemantic.SUCCESS)
             ConsumaStatusChip(text = stringResource(R.string.catalog_warning), semantic = ConsumaStatusSemantic.WARNING)
-            
+
             ConsumaDivider()
 
             ConsumaSectionHeader(title = stringResource(R.string.catalog_avatars_title))
             ConsumaAvatar(initials = "CA")
-            
+
             ConsumaDivider()
 
             ConsumaSectionHeader(title = stringResource(R.string.catalog_prices_title))
@@ -112,6 +113,9 @@ fun DesignSystemCatalogScreen(
             ConsumaDivider()
 
             ConsumaSectionHeader(title = stringResource(R.string.catalog_screen_states_title))
+            ConsumaLoadingState(modifier = Modifier.fillMaxWidth())
+            ConsumaEmptyState(title = stringResource(R.string.empty_state_preview_title), description = stringResource(R.string.empty_state_preview_description))
+            ConsumaErrorState(message = stringResource(R.string.error_state_preview_message), onRetry = {})
         }
     }
 }

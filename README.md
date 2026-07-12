@@ -27,18 +27,37 @@ A CONSUMA Aqui é a aplicação pública do consumidor dentro do ecossistema CON
 
 ## Como executar testes
 - Testes unitários: `./gradlew testDebugUnitTest`
-- Testes Compose (instrumentados): `./gradlew connectedDebugAndroidTest` (requer dispositivo ou emulador acordado e desbloqueado)
+- Testes unitários por variante: `./gradlew testDebugUnitTest`, `./gradlew testStagingUnitTest`, `./gradlew testReleaseUnitTest`
+- Lint: `./gradlew lintDebug`
+- Testes instrumentados: `./gradlew connectedDebugAndroidTest` (requer dispositivo ou emulador acordado e desbloqueado)
+
+## Fluxo de Navegação
+A aplicação segue o fluxo estrutural:
+
+```
+Splash → Initialization Gateway → App Shell
+```
+
+Dentro do `App Shell`, a navegação principal é feita através de `Bottom Navigation` com quatro destinos permanentes:
+- **Início**
+- **Pesquisar**
+- **Pedidos**
+- **Mais**
+
+Os destinos secundários (Definições, Ajuda, Sobre, Design System) são acedidos a partir de `Mais` e não apresentam `Bottom Navigation`.
 
 ## Ambientes
 A aplicação suporta os seguintes ambientes:
-- **DEBUG**: Ambiente de desenvolvimento; após o Splash abre o catálogo do Design System.
-- **STAGING**: Ambiente de testes integrados; preserva o catálogo para validação visual.
-- **RELEASE**: Ambiente de produção; após o Splash abre somente a tela institucional mínima. O catálogo não é registado no grafo de navegação normal.
+- **DEBUG**: Ambiente de desenvolvimento; apresenta ferramentas de desenvolvimento em `Mais`, incluindo o catálogo do Design System.
+- **STAGING**: Ambiente de testes integrados; preserva as ferramentas de validação, incluindo o Design System.
+- **RELEASE**: Ambiente de produção; não apresenta ferramentas de desenvolvimento e não regista a rota do Design System no grafo navegável.
+
+A decisão sobre ambientes é centralizada em `NavigationPolicy` e resolvida a partir de `BuildConfig.ENVIRONMENT`.
 
 ## Estrutura Inicial
-- `core/`: Componentes base (design system, ambiente, navegação, ui states, erros).
-- `feature/`: Funcionalidades isoladas (bootstrap, placeholder).
-- `data/`: Camada de dados (repositórios, fontes de dados).
+- `core/`: Componentes base (design system, ambiente, navegação, app state, ui states, erros).
+- `feature/`: Funcionalidades isoladas (bootstrap, home, search, orders, more, settings, help, about, developer).
+- `data/`: Camada de dados (repositórios, fontes de dados) — ainda não implementada.
 
 ## Regras de Contribuição
 - O desenvolvimento é orientado por funcionalidades.
@@ -47,13 +66,13 @@ A aplicação suporta os seguintes ambientes:
 - **NÃO** usar strings hardcoded. Todas as strings devem estar em `strings.xml`.
 - **NÃO** usar cores hexadecimais espalhadas no código. Utilize os tokens e as paletas em `Theme.kt`, `Color.kt` e `SemanticColors.kt`.
 - **NÃO** usar margens e paddings arbitrários. Utilize os tokens de `ConsumaSpacing` e de `ConsumaSize`.
-- Ícones de ação devem ter descrição; ícones meramente decorativos devem evitar anúncios duplicados. Estados de loading/disabled e valores de preço/desconto devem preservar semântica acessível.
-- Catálogo de UI: Em modo de desenvolvimento, a tela `DesignSystemCatalogScreen` possibilita a auditoria de componentes e temas.
+- Ícones de acção devem ter descrição; ícones meramente decorativos devem evitar anúncios duplicados. Estados de loading/disabled e valores de preço/desconto devem preservar semântica acessível.
+- Catálogo de UI: Em modo de desenvolvimento e staging, a tela `DesignSystemCatalogScreen` possibilita a auditoria de componentes e temas. Não está disponível em `RELEASE`.
 - Avisos: URLs e secrets NÃO devem ser versionados neste repositório.
 
 ## Sequência de Prompts
 Este projecto é mantido através de prompts sequenciais:
-1. `app-foundation-001` (Actual)
+1. `app-foundation-001`
 2. `design-system-foundation-001`
-3. `app-shell-navigation-001`
+3. `app-shell-navigation-001` (Actual)
 ... (até a integração final)

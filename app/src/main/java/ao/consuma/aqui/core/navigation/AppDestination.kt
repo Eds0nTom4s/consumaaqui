@@ -1,18 +1,80 @@
 package ao.consuma.aqui.core.navigation
 
+import androidx.annotation.StringRes
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.ui.graphics.vector.ImageVector
+import ao.consuma.aqui.R
+
 sealed class AppDestination(val route: String) {
     data object Splash : AppDestination("splash")
-    data object Institutional : AppDestination("institutional")
+    data object Initialization : AppDestination("initialization")
+    data object AppShell : AppDestination("app_shell")
+    data object Home : AppDestination("home")
+    data object Search : AppDestination("search")
+    data object Orders : AppDestination("orders")
+    data object More : AppDestination("more")
+    data object Settings : AppDestination("settings")
+    data object Help : AppDestination("help")
+    data object About : AppDestination("about")
     data object DesignSystemCatalog : AppDestination("design_system_catalog")
+
+    companion object {
+        val all: List<AppDestination> = listOf(
+            Splash,
+            Initialization,
+            AppShell,
+            Home,
+            Search,
+            Orders,
+            More,
+            Settings,
+            Help,
+            About,
+            DesignSystemCatalog
+        )
+    }
 }
 
-object NavigationPolicy {
-    fun destinationAfterSplash(environment: String): AppDestination =
-        if (environment == "RELEASE") {
-            AppDestination.Institutional
-        } else {
-            AppDestination.DesignSystemCatalog
-        }
+data class TopLevelDestination(
+    val destination: AppDestination,
+    @StringRes val label: Int,
+    val icon: ImageVector,
+    val testTag: String
+)
 
-    fun isDesignSystemCatalogEnabled(environment: String): Boolean = environment != "RELEASE"
-}
+val topLevelDestinations = listOf(
+    TopLevelDestination(
+        destination = AppDestination.Home,
+        label = R.string.nav_home,
+        icon = Icons.Default.Home,
+        testTag = NavigationTestTags.HOME
+    ),
+    TopLevelDestination(
+        destination = AppDestination.Search,
+        label = R.string.nav_search,
+        icon = Icons.Default.Search,
+        testTag = NavigationTestTags.SEARCH
+    ),
+    TopLevelDestination(
+        destination = AppDestination.Orders,
+        label = R.string.nav_orders,
+        icon = Icons.Default.ShoppingCart,
+        testTag = NavigationTestTags.ORDERS
+    ),
+    TopLevelDestination(
+        destination = AppDestination.More,
+        label = R.string.nav_more,
+        icon = Icons.Default.Menu,
+        testTag = NavigationTestTags.MORE
+    )
+)
+
+fun AppDestination.isTopLevel(): Boolean =
+    this in topLevelDestinations.map { it.destination }
+
+fun AppDestination.bottomNavigationVisible(): Boolean = isTopLevel()

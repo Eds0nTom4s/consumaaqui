@@ -5,6 +5,7 @@
     <string name="foundation_ready_subtitle">Fundação Android configurada.</string>
     <string name="environment_label">Ambiente: %s</string>
     <string name="version_label">Versão: %s</string>
+    <string name="version_code_label">Código: %d</string>
     <string name="validate_navigation">Validar navegação</string>
     <string name="navigation_success">Navegação validada com sucesso!</string>
     <string name="try_again">Tentar Novamente</string>
@@ -47,4 +48,66 @@
     <string name="catalog_messages_title">Mensagens inline</string>
     <string name="catalog_inline_message">Aviso importante do sistema.</string>
     <string name="catalog_screen_states_title">Estados de tela</string>
+    <string name="empty_state_preview_title">Estado vazio</string>
+    <string name="empty_state_preview_description">Nenhum conteúdo disponível.</string>
+    <string name="error_state_preview_message">Ocorreu um erro ao carregar.</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Início</string>
+    <string name="nav_search">Pesquisar</string>
+    <string name="nav_orders">Pedidos</string>
+    <string name="nav_more">Mais</string>
+    <string name="nav_selected_description">%s seleccionado</string>
+    <string name="nav_unselected_description">%s não seleccionado</string>
+
+    <!-- Home -->
+    <string name="home_title">Início</string>
+    <string name="home_welcome">Bem-vindo à CONSUMA Aqui</string>
+    <string name="home_location_placeholder">A sua localização será apresentada aqui.</string>
+    <string name="home_merchants_section_title">Comerciantes</string>
+    <string name="home_merchants_section_description">Comerciantes próximos serão apresentados futuramente.</string>
+    <string name="home_promotions_section_title">Promoções</string>
+    <string name="home_promotions_section_description">Promoções em destaque serão apresentadas futuramente.</string>
+
+    <!-- Search -->
+    <string name="search_title">Pesquisar</string>
+    <string name="search_empty_title">O que procura?</string>
+    <string name="search_empty_description">Pesquise por comerciantes, produtos ou categorias.</string>
+    <string name="search_query_preview">Query: %s</string>
+
+    <!-- Orders -->
+    <string name="orders_title">Pedidos</string>
+    <string name="orders_empty_title">Ainda não fez pedidos</string>
+    <string name="orders_empty_description">Quando fizer um pedido, ele aparecerá aqui.</string>
+    <string name="orders_back_to_home">Explorar comerciantes</string>
+
+    <!-- More -->
+    <string name="more_title">Mais</string>
+    <string name="more_settings">Definições</string>
+    <string name="more_help">Ajuda</string>
+    <string name="more_about">Sobre a CONSUMA Aqui</string>
+    <string name="more_developer_tools_title">Ferramentas de desenvolvimento</string>
+    <string name="more_design_system">Design System</string>
+    <string name="more_build_info">Informações da build</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Definições</string>
+    <string name="settings_placeholder_title">Definições</string>
+    <string name="settings_placeholder_description">Preferências do utilizador serão configuradas aqui.</string>
+    <string name="settings_theme_info">Tema claro/escuro segue a configuração do sistema.</string>
+
+    <!-- Help -->
+    <string name="help_title">Ajuda</string>
+    <string name="help_placeholder_title">Centro de ajuda</string>
+    <string name="help_placeholder_description">Canais de suporte serão disponibilizados futuramente.</string>
+
+    <!-- About -->
+    <string name="about_title">Sobre</string>
+    <string name="about_version">Versão %s</string>
+    <string name="about_description">A CONSUMA Aqui conecta pessoas a comerciantes locais de forma simples e rápida.</string>
+    <string name="about_slogan">Descubra. Peça. Aproveite.</string>
+
+    <!-- Snackbar -->
+    <string name="snackbar_dismiss">Fechar</string>
+    <string name="snackbar_demo_message">Esta é uma mensagem de exemplo.</string>
 </resources>
