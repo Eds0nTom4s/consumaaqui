@@ -80,13 +80,17 @@ app/src/main/java/ao/consuma/aqui/
 - NavigationTest (Compose Test)
 
 17. Comandos executados: 
-- `./gradlew clean assembleDebug testDebugUnitTest lintDebug`
+- `./gradlew clean assembleDebug testDebugUnitTest lintDebug assembleStaging assembleRelease`
 
 18. Resultados: 
-- Todos os testes unitários (3 no total) foram executados e validados. A compilação (assembleDebug) concluiu com êxito. O comando de testes de UI também foi validado em emulador.
+- testes unitários executados;
+- lint executado;
+- assembleDebug executado;
+- teste instrumentado compilado;
+- connectedDebugAndroidTest não executado por ausência de emulador activo.
 
 19. Validação manual: 
-- Teste executado no emulador local (Pixel_6_API_34): Splash passa para FoundationReady, apresenta informações de ambiente e actualiza estado da interface ao clicar no botão. Activity recriada sem crash, logcat sem exceptions e voltar com navegação limpa.
+- Teste não executado no emulador local nesta etapa técnica de higiene devido à ausência de emulador activo.
 
 20. Ficheiros alterados: 
 - gradle/libs.versions.toml
