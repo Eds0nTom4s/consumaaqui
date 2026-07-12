@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.error as semanticsError
+import androidx.compose.ui.semantics.semantics
 import ao.consuma.aqui.R
 import ao.consuma.aqui.core.designsystem.theme.ConsumaAquiTheme
 
@@ -34,10 +36,15 @@ fun ConsumaTextField(
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default
 ) {
+    val fieldModifier = if (error && supportingText != null) {
+        modifier.semantics { semanticsError(supportingText) }
+    } else {
+        modifier
+    }
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = modifier.fillMaxWidth(),
+        modifier = fieldModifier.fillMaxWidth(),
         enabled = enabled,
         readOnly = readOnly,
         singleLine = singleLine,

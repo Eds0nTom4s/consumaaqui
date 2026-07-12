@@ -12,6 +12,8 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import ao.consuma.aqui.core.designsystem.components.ConsumaEmptyState
 import ao.consuma.aqui.core.designsystem.components.ConsumaErrorState
 import ao.consuma.aqui.core.designsystem.components.ConsumaPrimaryButton
@@ -47,13 +49,6 @@ class DesignSystemComponentsTest {
         var clickCount = 0
         composeTestRule.setContent {
             ConsumaAquiTheme {
-                ConsumaPrimaryButton(text = "Loading", loading = true, onClick = { clickCount++ })
-            }
-        }
-        composeTestRule.onNodeWithText("Loading").assertDoesNotExist() // Text is hidden when loading
-        // We can't click by text, let's click the button itself by tag
-        composeTestRule.setContent {
-            ConsumaAquiTheme {
                 ConsumaPrimaryButton(
                     text = "Loading",
                     loading = true,
@@ -62,6 +57,7 @@ class DesignSystemComponentsTest {
                 )
             }
         }
+        composeTestRule.onNodeWithText("Loading").assertDoesNotExist()
         composeTestRule.onNodeWithTag("loading_btn").performClick()
         composeTestRule.onNodeWithTag("loading_btn").performClick()
         assertEquals(0, clickCount)
@@ -106,6 +102,9 @@ class DesignSystemComponentsTest {
             }
         }
         composeTestRule.onNodeWithText("Error message").assertIsDisplayed()
+        composeTestRule.onNode(
+            SemanticsMatcher.expectValue(SemanticsProperties.Error, "Error message")
+        ).assertExists()
     }
 
     @Test

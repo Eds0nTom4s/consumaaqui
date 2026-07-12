@@ -25,6 +25,7 @@ fun ConsumaAvatar(
     modifier: Modifier = Modifier,
     initials: String? = null,
     icon: ImageVector = Icons.Default.Person,
+    contentDescription: String? = null,
     size: Dp = ConsumaSize.avatarMedium
 ) {
     Surface(
@@ -37,7 +38,11 @@ fun ConsumaAvatar(
             if (initials != null) {
                 Text(text = initials, style = MaterialTheme.typography.titleMedium)
             } else {
-                Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(size / 2))
+                Icon(
+                    imageVector = icon,
+                    contentDescription = contentDescription,
+                    modifier = Modifier.size(size / 2)
+                )
             }
         }
     }
@@ -46,7 +51,8 @@ fun ConsumaAvatar(
 @Composable
 fun ConsumaImagePlaceholder(
     modifier: Modifier = Modifier,
-    icon: ImageVector = Icons.Default.Person
+    icon: ImageVector = Icons.Default.Person,
+    contentDescription: String? = null
 ) {
     Box(
         modifier = modifier.background(MaterialTheme.colorScheme.surfaceVariant),
@@ -54,7 +60,7 @@ fun ConsumaImagePlaceholder(
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = null,
+            contentDescription = contentDescription,
             tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
