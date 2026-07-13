@@ -241,8 +241,8 @@ preview usa Hilt ou ViewModel.
 
 Novos testes cobrem repository (13), mapper (11) e ViewModel (13): filtros,
 pesquisa, cenários, IDs, localização, requests, refresh, retry, callback,
-formatação e opcionais. Resultado acumulado por variante: 75 testes,
-0 falhas em debug, staging e release.
+formatação e opcionais. Resultado acumulado por variante: 75 testes, 75
+aprovados, 0 failures, 0 errors e 0 skipped em debug, staging e release.
 
 ==================================================
 32. TESTES INSTRUMENTADOS
@@ -253,11 +253,13 @@ categoria/Todos, placeholder/Back, empty, error/retry, offline com conteúdo,
 refresh, rotação e tabs. HomeDiscoveryPresentationTest cobre loading, empty,
 error, dark e escala 1,5x. Cobertura anterior foi mantida.
 
-Resultado final acumulado reportado pelo runner: 56 casos; 1 skip condicional
-esperado na variante debug; 0 falhas. A repetição integral final passou em
-2m07s após estabilizar uma asserção de item lazy e repetir um timeout de
-navegação previamente aprovado.
-Dispositivo: Samsung SM-S928U1, Android 16, API 36.
+Resultado final acumulado: o runner iniciou 55 casos; 54 aprovados, 1 skip
+condicional esperado na variante debug e 0 falhas. O UTP apresentou a linha
+agregada "Finished 56 tests"/"56/55", mas o total declarado no arranque é 55.
+Duração Gradle: 1m44s; tempo agregado dos casos no XML: 90,074s.
+Dispositivo: Samsung SM-S928U1 (R5CX12XNNJX), Android 16, API 36, estado ADB
+"device". Relatório HTML:
+app/build/reports/androidTests/connected/debug/index.html
 
 ==================================================
 33. COBERTURA ACUMULADA
@@ -272,8 +274,8 @@ nova descoberta. Nenhum teste anterior foi removido.
 ==================================================
 
 assembleDebug: PASS; assembleStaging: PASS; assembleRelease: PASS.
-testDebugUnitTest: PASS; testStagingUnitTest: PASS;
-testReleaseUnitTest: PASS.
+testDebugUnitTest: PASS (75/75); testStagingUnitTest: PASS (75/75);
+testReleaseUnitTest: PASS (75/75).
 
 ==================================================
 35. LINT
