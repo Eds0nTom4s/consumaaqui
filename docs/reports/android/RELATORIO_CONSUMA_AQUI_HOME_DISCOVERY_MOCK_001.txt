@@ -1,0 +1,425 @@
+RELATÓRIO TÉCNICO — CONSUMA AQUI ANDROID
+FASE: HOME-DISCOVERY-MOCK-001
+Data: 2026-07-13
+
+==================================================
+1. RESUMO EXECUTIVO
+==================================================
+
+Implementada a primeira Home funcional de descoberta, alimentada por uma
+camada de dados mock substituível. A UI apresenta localização, pesquisa,
+cinco categorias, oito comerciantes, próximos, destaques, modalidades,
+disponibilidade, distância/tempo simulados, rating, promoções e estados
+Loading, Content, Empty, Error e Offline.
+
+==================================================
+2. BRANCH
+==================================================
+
+android/home-discovery-mock-001
+
+==================================================
+3. COMMIT BASE
+==================================================
+
+c09aca0b03be5cf0fae222301b96e7386da33ad4
+
+==================================================
+4. ESTADO INICIAL
+==================================================
+
+Worktree limpo, branch anterior no commit base aprovado e referência
+remota sincronizada. A Home anterior continha localização e textos de
+placeholder, sem dados de descoberta.
+
+==================================================
+5. FLUXO IMPLEMENTADO
+==================================================
+
+Home → localização → pesquisa/categoria → MerchantCard →
+merchant/{merchantId} → placeholder → Back → Home.
+Refresh reutiliza query, categoria e localização. Tabs regressam à entrada
+Home existente, preservando o ViewModel e a pesquisa.
+
+==================================================
+6. ARQUITECTURA DA HOME
+==================================================
+
+Compose/HomeRoute → HomeViewModel → HomeDiscoveryRepository →
+InMemoryHomeDiscoveryRepository → HomeDiscoveryFixtures.
+
+Não foi criado use case pass-through: não existe regra reutilizável entre
+ViewModel e repository que justifique essa camada nesta fase.
+
+==================================================
+7. CONTRATOS DE DOMÍNIO
+==================================================
+
+DiscoveryLocation, MoneyAmount, MerchantSummary, MerchantCategory,
+MerchantAvailability, FulfillmentOption, PromotionSummary,
+MerchantSection e HomeDiscoveryContent são Kotlin puro, sem Android,
+Compose, resources, Retrofit ou Room.
+
+==================================================
+8. REPOSITORY
+==================================================
+
+HomeDiscoveryRepository recebe HomeDiscoveryRequest e devolve
+HomeDiscoveryResult explícito através de função suspend. O contrato não expõe fixtures, MockLocation,
+exceptions, HTTP ou tipos Android.
+
+==================================================
+9. IMPLEMENTAÇÃO MOCK
+==================================================
+
+InMemoryHomeDiscoveryRepository filtra deterministicamente por categoria,
+nome, descrição e categoria textual. Implementa CONTENT, EMPTY, ERROR e
+OFFLINE através de MockHomeScenario. O cenário normal é CONTENT e nenhum
+selector foi exposto ao utilizador Release; testes controlam o repository.
+
+==================================================
+10. FIXTURES
+==================================================
+
+HomeDiscoveryFixtures contém IDs estáveis e oito comerciantes fictícios:
+Sabor da Maianga, Doce Embondeiro, Café Horizonte, Mercado Talatona,
+Serviços Viana, Cantinho do Kilamba, Fonte Fresca e Pães da Mutamba.
+Inclui dados ausentes realistas, estados diversos e promoções opcionais.
+
+==================================================
+11. REQUEST
+==================================================
+
+HomeDiscoveryRequest(location, selectedCategoryId, query, forceRefresh).
+LocationPreference.Selected é mapeada para DiscoveryLocation na fronteira
+do ViewModel; Skipped/NotConfigured produzem location=null.
+
+==================================================
+12. RESULT
+==================================================
+
+HomeDiscoveryResult.Success(content, source, isOffline) ou Failure(error).
+Não são propagadas exceptions para apresentação.
+
+==================================================
+13. ERROS
+==================================================
+
+NetworkUnavailable, LocationRequired, Unauthorized, NotFound, Server e
+Unknown, sem códigos HTTP. HomeUiState.Error usa UiText resolvido na UI.
+
+==================================================
+14. DATASOURCE
+==================================================
+
+DataSource suporta MEMORY, REMOTE e CACHE. O mock retorna MEMORY;
+OFFLINE retorna conteúdo MEMORY marcado isOffline=true.
+
+==================================================
+15. VIEWMODEL
+==================================================
+
+HomeViewModel conhece apenas HomeDiscoveryRepository, o contrato de estado
+de lançamento e HomeUiMapper. Gere localização, query, categoria, refresh,
+retry, estados e callbacks de navegação; não conhece fixtures, BuildConfig,
+Context, Activity, NavController ou InMemoryHomeDiscoveryRepository.
+
+==================================================
+16. UISTATE
+==================================================
+
+Fonte única selada: Loading, Content, Empty e Error. Content transporta
+localização, categorias, filtros, secções, refresh e offline.
+
+==================================================
+17. UIEVENT
+==================================================
+
+Load, Refresh, SearchChanged, CategorySelected, MerchantSelected,
+LocationSelected e Retry. Navegação é callback, não estado global.
+
+==================================================
+18. MAPPERS
+==================================================
+
+HomeUiMapper converte domínio para UiModels, formatando distância, rating,
+moeda, disponibilidade, modalidades e acessibilidade. Labels Android são
+UiText.Resource e só são resolvidos na camada Compose.
+
+==================================================
+19. LOCALIZAÇÃO
+==================================================
+
+Selected envia DiscoveryLocation e mantém distâncias simuladas. Skipped e
+NotConfigured mostram CTA e conteúdo geral sem distância nem afirmação de
+proximidade. O fluxo de localização aprovado foi reutilizado.
+
+==================================================
+20. CATEGORIAS
+==================================================
+
+Todos, Restaurantes, Pastelaria, Bebidas, Mercado e Serviços. As cinco
+categorias de domínio vêm do repository; Todos é uma opção de apresentação.
+LazyRow usa keys por ID e estado seleccionado do chip.
+
+==================================================
+21. PESQUISA
+==================================================
+
+Pesquisa case-insensitive com trim por nome, descrição e categoria. O
+ViewModel envia query no request; nenhum composable filtra listas.
+
+==================================================
+22. COMERCIANTES PRÓXIMOS
+==================================================
+
+Com localização, a secção é “Comerciantes próximos” e mostra distância
+simulada. Sem localização, chama-se “Opções disponíveis” e omite distância.
+
+==================================================
+23. DESTAQUES
+==================================================
+
+Orientados por MerchantSummary.isFeatured na camada de dados. O composable
+não usa posição/take para decidir relevância.
+
+==================================================
+24. PROMOÇÕES
+==================================================
+
+PromotionSummary é opcional e estruturada. Android apenas apresenta badge
+ou título; não calcula desconto, validade ou condições comerciais.
+
+==================================================
+25. ESTADOS DA HOME
+==================================================
+
+Loading: indicador; Content: descoberta; Empty: acção de limpar filtros;
+Error: mensagem e retry; Offline: banner com conteúdo MEMORY acessível.
+
+==================================================
+26. REFRESH
+==================================================
+
+Acção explícita Actualizar envia forceRefresh=true, preserva query e
+categoria, expõe isRefreshing e não duplica itens.
+
+==================================================
+27. OFFLINE
+==================================================
+
+Simulado deterministicamente no repository. Não existe detecção de rede
+real. Conteúdo é marcado como possivelmente desactualizado via banner.
+
+==================================================
+28. NAVEGAÇÃO PARA COMERCIANTE
+==================================================
+
+Destino secundário merchant/{merchantId}; passa somente ID. A tela mostra
+o ID e informa que o perfil virá depois. Bottom Navigation fica oculta.
+Não há catálogo nem objecto de domínio no argumento.
+
+==================================================
+29. ACESSIBILIDADE
+==================================================
+
+Cards têm descrição agregada; disponibilidade, distância, tempo, rating e
+promoção são textuais; pesquisa é etiquetada; chips indicam selecção;
+localização e CTAs são anunciáveis; IDs não dependem de cor ou índice.
+
+==================================================
+30. PREVIEWS
+==================================================
+
+Home: loading, conteúdo, sem localização, vazio, erro, offline e dark.
+MerchantCard: aberto, fechado, promoção, sem imagem e sem rating. Nenhum
+preview usa Hilt ou ViewModel.
+
+==================================================
+31. TESTES UNITÁRIOS
+==================================================
+
+Novos testes cobrem repository (13), mapper (11) e ViewModel (13): filtros,
+pesquisa, cenários, IDs, localização, requests, refresh, retry, callback,
+formatação e opcionais. Resultado acumulado por variante: 75 testes,
+0 falhas em debug, staging e release.
+
+==================================================
+32. TESTES INSTRUMENTADOS
+==================================================
+
+HomeDiscoveryTest cobre abertura, localização, pesquisa/limpeza,
+categoria/Todos, placeholder/Back, empty, error/retry, offline com conteúdo,
+refresh, rotação e tabs. HomeDiscoveryPresentationTest cobre loading, empty,
+error, dark e escala 1,5x. Cobertura anterior foi mantida.
+
+Resultado final acumulado reportado pelo runner: 56 casos; 1 skip condicional
+esperado na variante debug; 0 falhas. A repetição integral final passou em
+2m07s após estabilizar uma asserção de item lazy e repetir um timeout de
+navegação previamente aprovado.
+Dispositivo: Samsung SM-S928U1, Android 16, API 36.
+
+==================================================
+33. COBERTURA ACUMULADA
+==================================================
+
+Design System, catálogo, App Shell, navegação, onboarding, localização,
+edição de localização, Home anterior, Mais, pesquisa, snackbar, ambiente e
+nova descoberta. Nenhum teste anterior foi removido.
+
+==================================================
+34. BUILDS
+==================================================
+
+assembleDebug: PASS; assembleStaging: PASS; assembleRelease: PASS.
+testDebugUnitTest: PASS; testStagingUnitTest: PASS;
+testReleaseUnitTest: PASS.
+
+==================================================
+35. LINT
+==================================================
+
+lintDebug: PASS, sem erros. A primeira execução encontrou um defeito interno
+incremental do analisador FIR num teste antigo; após cleanLintDebug e reinício
+do daemon, o mesmo código passou integralmente.
+
+==================================================
+36. VALIDAÇÃO MANUAL
+==================================================
+
+Validado no SM-S928U1/API 36: Home com/sem localização, categorias,
+pesquisa, aberto/fechado, placeholder de imagem, promoção, loading, empty,
+error/retry, offline, refresh, placeholder/Back, rotação, tabs, dark e
+escala 1,5x. Logcat do runner sem crash da aplicação.
+
+==================================================
+37. FICHEIROS ALTERADOS
+==================================================
+
+Criados domain/model, domain/repository, data, presentation, testes unitários
+e instrumentados e este relatório. Alterados AppDestination,
+AppShellNavigation, ConsumaAppState, NavigationTestTags e strings. Home
+placeholder anterior foi substituída pela estrutura de apresentação.
+
+==================================================
+38. RISCOS
+==================================================
+
+Fixtures podem divergir do backend; distância, disponibilidade, tempo,
+rating e promoções são simulados; URLs não carregam sem Coil e usam placeholder; não há
+paginação, cache, conectividade real nem contrato backend validado; a API
+precisará de versionamento. O contrato suspend já evita mudança de assinatura
+quando a implementação remota introduzir I/O; dispatcher, cancelamento e
+política de cache ainda deverão ser validados nessa fase.
+
+==================================================
+39. PENDÊNCIAS
+==================================================
+
+Validar contrato backend, concorrência/cancelamento remoto, endpoint,
+paginação, cache, imagens, moeda/locale completos e telemetria apenas nas
+fases próprias.
+
+==================================================
+40. ESTADO DO WORKTREE
+==================================================
+
+Branch android/home-discovery-mock-001. Worktree deve ficar limpo após os
+commits funcional e documental. git diff --check deve passar.
+
+==================================================
+41. CONFIRMAÇÃO DE ESCOPO
+==================================================
+
+Não foram implementados backend, Retrofit, OkHttp, Room, DataStore, Coil,
+GPS, permissões, mapas, catálogo, produto, carrinho, checkout, pedido,
+favoritos, autenticação, analytics, notificações ou paginação real. SDKs e
+dependências externas não foram alterados.
+
+==================================================
+ANÁLISE ARQUITECTURAL
+==================================================
+
+DECISÕES TOMADAS
+
+- Domínio Kotlin puro e UI dependente apenas de UiModels.
+- Repository estável com Request/Result/Error/DataSource explícitos.
+- Fixtures isoladas em data e cenário injectável apenas em testes.
+- Sem use case vazio; ViewModel chama o repository directamente.
+- DiscoveryLocation evita acoplar onboarding à Home.
+- MerchantSection.hasMore mantém espaço de evolução para paginação.
+- UiText mantém Context/resources fora do ViewModel.
+
+ALTERNATIVAS CONSIDERADAS E REJEITADAS
+
+- Listas no composable/ViewModel: quebrariam substituição por API.
+- MockLocation no repository: acoplaria features.
+- DTOs/Retrofit artificiais: antecipação sem contrato backend.
+- Ferramenta visual de cenário: aumentaria escopo; injecção de testes cobre.
+- Use case pass-through: custo sem regra de aplicação reutilizável.
+- Filtro no composable: impediria migração transparente para pesquisa remota.
+
+IMPACTO FUTURO E REUTILIZAÇÃO
+
+HomeScreen, HomeRoute, UiState, UiEvent, UiModels, ViewModel, domínio,
+HomeUiMapper e HomeDiscoveryRepository permanecem. Cards podem migrar para
+um componente partilhado somente após segunda reutilização real.
+
+RISCOS TÉCNICOS E CUSTO
+
+Custo baixo/moderado: fronteiras explícitas, mas DTO mapping, concorrência,
+cache e paginação ainda exigirão implementação. Maior risco é a fixture
+modelar campos/semânticas diferentes da API real.
+
+FRONTEIRAS QUE NÃO DEVEM SER QUEBRADAS
+
+- Fixtures nunca em UI/ViewModel.
+- DTOs nunca em domínio/UI.
+- Resources/Android nunca em domínio.
+- NavController nunca no ViewModel.
+- Merchant object nunca em argumento de navegação.
+- Regras remotas nunca em composables.
+
+ESTRATÉGIA PARA EVITAR DIVERGÊNCIA
+
+Validar Request/Result/modelos com OpenAPI/backend antes de criar DTOs;
+adicionar contract tests de DTO mapper; manter fixtures cobrindo nulos e
+estados; versionar fixtures por contrato; comparar respostas sandbox com
+invariantes de domínio; impedir que DTOs substituam modelos de domínio.
+
+CONTRATOS BACKEND A VALIDAR
+
+Proposta sujeita a auditoria: GET /public/discovery/home com locationId ou
+coordenadas, categoryId, query, page e size. Validar dinheiro, timezone,
+availability, promoções, editorial/featured, distância, ETA, imagens,
+paginação, erros, autenticação pública e versionamento.
+
+==================================================
+PLANO DE TRANSIÇÃO MOCK → API
+==================================================
+
+COMPONENTE | ESTADO ACTUAL | ESTADO FUTURO | MANTÉM | SUBSTITUI | RISCO
+HomeScreen | Compose/UiModels | mesma UI | sim | não | baixo
+HomeViewModel | repository suspend contract | remote contract | sim | não | baixo/médio (dispatcher)
+HomeUiState | estados completos | mesmos estados | sim | não | baixo
+HomeUiModel | apresentação formatada | mesmos modelos | sim | não | baixo
+HomeUiMapper | domínio→UI | mesmo mapper | sim | não | locale
+HomeDiscoveryRepository | interface Request/Result | contrato remoto | sim | não | validação API
+InMemoryHomeDiscoveryRepository | filtros/fixtures | testes/dev fallback | testes | produção | divergência
+RemoteHomeDiscoveryRepository | inexistente | implementação | não | adicionado | rede/cache
+HomeDiscoveryApi | inexistente | endpoint client | não | adicionado | contrato
+DTOs | inexistentes | response/request DTOs | não | adicionados | schema
+DTO mappers | inexistentes | DTO→domínio | não | adicionados | semântica
+cache | inexistente | política a definir | não | adicionada | invalidação
+fixtures | dados determinísticos | testes contractuais | testes | fonte produção | drift
+testes | unitários/UI/instrumentados | manter + contract/integration | sim | ampliar | ambientes
+
+Composição futura:
+RemoteHomeDiscoveryRepository → HomeDiscoveryApi → ResponseDto →
+HomeDiscoveryDtoMapper → HomeDiscoveryContent.
+
+Classes mantidas: toda presentation, todos os modelos domain e contrato
+HomeDiscoveryRepository/Request/Result/Error/DataSource.
+
+Classes substituídas/adicionadas: bind Hilt de InMemory para Remote; adicionar
+API, DTOs, DTO mappers e cache. Fixtures permanecem somente em testes/dev.
