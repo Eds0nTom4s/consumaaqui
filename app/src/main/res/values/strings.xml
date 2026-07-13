@@ -154,6 +154,33 @@
     <string name="home_no_location_title">Escolha uma localização</string>
     <string name="home_no_location_description">Escolha uma localização para encontrar comerciantes próximos.</string>
     <string name="home_choose_location">Escolher localização</string>
+    <string name="home_greeting">Descubra perto de si</string>
+    <string name="home_refresh">Actualizar</string>
+    <string name="home_refreshing">A actualizar opções…</string>
+    <string name="home_search_placeholder">Pesquisar comerciantes ou categorias…</string>
+    <string name="home_no_location_discovery">Escolha uma localização para ver opções próximas.</string>
+    <string name="home_nearby_title">Comerciantes próximos</string>
+    <string name="home_discovery_title">Opções disponíveis</string>
+    <string name="home_featured_title">Em destaque</string>
+    <string name="home_empty_title">Nenhuma opção encontrada</string>
+    <string name="home_empty_description">Tente limpar a pesquisa ou escolher outra categoria.</string>
+    <string name="home_clear_filters">Limpar filtros</string>
+    <string name="home_error_generic">Não foi possível carregar as opções. Tente novamente.</string>
+    <string name="home_error_offline">Sem ligação para actualizar as opções.</string>
+    <string name="home_error_location">Escolha uma localização para continuar.</string>
+    <string name="home_availability_open">Aberto</string>
+    <string name="home_availability_closing_soon">Fecha em %d min</string>
+    <string name="home_availability_opens_at">Abre às %s</string>
+    <string name="home_availability_closed">Fechado</string>
+    <string name="home_availability_unknown">Horário indisponível</string>
+    <string name="home_fulfillment_pickup">Recolha</string>
+    <string name="home_fulfillment_delivery">Entrega</string>
+    <string name="home_fulfillment_dine_in">No local</string>
+    <string name="home_fulfillment_service">Serviço</string>
+    <string name="home_merchant_image_placeholder">Imagem indisponível para %s</string>
+    <string name="home_merchant_placeholder_title">Comerciante</string>
+    <string name="home_merchant_placeholder_message">O perfil deste comerciante será implementado numa próxima fase.</string>
+    <string name="home_merchant_placeholder_id">ID: %s</string>
 
     <!-- More -->
     <string name="more_location">Localização</string>

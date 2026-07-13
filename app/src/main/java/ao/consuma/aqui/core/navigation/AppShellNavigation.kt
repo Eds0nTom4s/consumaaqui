@@ -5,11 +5,14 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import ao.consuma.aqui.core.appstate.ConsumaAppState
 import ao.consuma.aqui.feature.about.AboutScreen
 import ao.consuma.aqui.feature.developer.DesignSystemCatalogScreen
 import ao.consuma.aqui.feature.help.HelpScreen
-import ao.consuma.aqui.feature.home.HomeScreen
+import ao.consuma.aqui.feature.home.presentation.HomeRoute
+import ao.consuma.aqui.feature.home.presentation.MerchantDetailsPlaceholderScreen
 import ao.consuma.aqui.feature.location.LocationSettingsScreen
 import ao.consuma.aqui.feature.location.LocationSetupMode
 import ao.consuma.aqui.feature.location.LocationSetupRoute
@@ -30,8 +33,11 @@ fun AppShellNavigation(
         modifier = modifier
     ) {
         composable(AppDestination.Home.route) {
-            HomeScreen(
-                onNavigateToLocationSettings = { appState.navigateTo(AppDestination.LocationSettings) }
+            HomeRoute(
+                onNavigateToLocationSettings = { appState.navigateTo(AppDestination.LocationSettings) },
+                onNavigateToMerchant = { merchantId ->
+                    appState.navController.navigate(AppDestination.merchantDetails(merchantId))
+                }
             )
         }
         composable(AppDestination.Search.route) {
@@ -79,6 +85,15 @@ fun AppShellNavigation(
             LocationSetupRoute(
                 mode = LocationSetupMode.EDIT,
                 onSetupComplete = appState::navigateBack
+            )
+        }
+        composable(
+            route = AppDestination.MerchantDetails.route,
+            arguments = listOf(navArgument("merchantId") { type = NavType.StringType })
+        ) { entry ->
+            MerchantDetailsPlaceholderScreen(
+                merchantId = entry.arguments?.getString("merchantId").orEmpty(),
+                onNavigateBack = appState::navigateBack
             )
         }
         if (isDesignSystemCatalogEnabled) {

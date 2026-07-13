@@ -25,6 +25,7 @@ sealed class AppDestination(val route: String) {
     data object Help : AppDestination("help")
     data object About : AppDestination("about")
     data object LocationSettings : AppDestination("location_settings")
+    data object MerchantDetails : AppDestination("merchant/{merchantId}")
     data object DesignSystemCatalog : AppDestination("design_system_catalog")
 
     companion object {
@@ -43,8 +44,11 @@ sealed class AppDestination(val route: String) {
             Help,
             About,
             LocationSettings,
+            MerchantDetails,
             DesignSystemCatalog
         )
+
+        fun merchantDetails(merchantId: String): String = "merchant/$merchantId"
     }
 }
 
