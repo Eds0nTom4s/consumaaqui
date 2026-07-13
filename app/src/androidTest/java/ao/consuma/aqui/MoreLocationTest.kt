@@ -2,6 +2,7 @@ package ao.consuma.aqui
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -67,11 +68,51 @@ class MoreLocationTest {
             .performClick()
         composeTestRule.onNodeWithTag(NavigationTestTags.LOCATION_CONFIRM).performClick()
 
-        composeTestRule.waitUntil(timeoutMillis = 10000) {
-            composeTestRule.onAllNodes(hasTestTag(NavigationTestTags.HOME))
-                .fetchSemanticsNodes().isNotEmpty()
-        }
+        waitForTag(NavigationTestTags.LOCATION_SETTINGS)
+        composeTestRule.onNodeWithTag(NavigationTestTags.LOCATION_SETTINGS).assertIsDisplayed()
+        composeTestRule.onAllNodes(hasTestTag(NavigationTestTags.APP_SHELL)).assertCountEquals(1)
+    }
+
+    @Test
+    fun confirming_edit_returns_to_existing_shell_and_back_returns_to_more() {
+        launchEditAndConfirm()
+
+        waitForTag(NavigationTestTags.LOCATION_SETTINGS)
+        composeTestRule.onNodeWithTag(NavigationTestTags.LOCATION_SETTINGS).assertIsDisplayed()
+        composeTestRule.onAllNodes(hasTestTag(NavigationTestTags.APP_SHELL)).assertCountEquals(1)
+
+        pressBack()
+
+        waitForTag(NavigationTestTags.MORE)
+        composeTestRule.onNodeWithTag(NavigationTestTags.MORE).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAV_MORE).assertIsDisplayed()
+    }
+
+    @Test
+    fun back_after_completed_edit_never_reveals_an_old_app_shell() {
+        launchEditAndConfirm()
+        pressBack()
+        waitForTag(NavigationTestTags.MORE)
+        composeTestRule.onNodeWithTag(NavigationTestTags.MORE).assertIsDisplayed()
+
+        pressBack()
+
         composeTestRule.onNodeWithTag(NavigationTestTags.HOME).assertIsDisplayed()
+        composeTestRule.onAllNodes(hasTestTag(NavigationTestTags.APP_SHELL)).assertCountEquals(1)
+        composeTestRule.onNodeWithTag(NavigationTestTags.LOCATION_SETUP).assertIsNotDisplayed()
+    }
+
+    @Test
+    fun cancelling_edit_returns_to_location_settings_not_home() {
+        navigateToMore()
+        composeTestRule.onNodeWithTag(NavigationTestTags.MORE_LOCATION).performClick()
+        composeTestRule.onNodeWithTag(NavigationTestTags.LOCATION_SETTINGS_CHANGE).performClick()
+        composeTestRule.onNodeWithTag(NavigationTestTags.LOCATION_SETUP).assertIsDisplayed()
+
+        pressBack()
+
+        composeTestRule.onNodeWithTag(NavigationTestTags.LOCATION_SETTINGS).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(NavigationTestTags.HOME).assertIsNotDisplayed()
     }
 
     @Test
@@ -95,5 +136,30 @@ class MoreLocationTest {
         }
         composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAV_MORE).performClick()
         composeTestRule.onNodeWithTag(NavigationTestTags.MORE).assertIsDisplayed()
+    }
+
+    private fun launchEditAndConfirm() {
+        navigateToMore()
+        composeTestRule.onNodeWithTag(NavigationTestTags.MORE_LOCATION).performClick()
+        composeTestRule.onNodeWithTag(NavigationTestTags.LOCATION_SETTINGS_CHANGE).performClick()
+        composeTestRule.onNodeWithTag(NavigationTestTags.LOCATION_CHOOSE_MANUALLY).performClick()
+        composeTestRule.onAllNodes(hasTestTag(NavigationTestTags.LOCATION_LIST_ITEM))[2]
+            .performClick()
+        composeTestRule.onNodeWithTag(NavigationTestTags.LOCATION_CONFIRM).performClick()
+        waitForTag(NavigationTestTags.LOCATION_SETTINGS)
+    }
+
+    private fun pressBack() {
+        composeTestRule.activityRule.scenario.onActivity { activity ->
+            activity.onBackPressedDispatcher.onBackPressed()
+        }
+        composeTestRule.waitForIdle()
+    }
+
+    private fun waitForTag(tag: String) {
+        composeTestRule.waitUntil(timeoutMillis = 10000) {
+            composeTestRule.onAllNodes(hasTestTag(tag)).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeTestRule.waitForIdle()
     }
 }

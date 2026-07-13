@@ -14,7 +14,8 @@ sealed class AppDestination(val route: String) {
     data object Splash : AppDestination("splash")
     data object Initialization : AppDestination("initialization")
     data object Onboarding : AppDestination("onboarding")
-    data object LocationSetup : AppDestination("location_setup")
+    data object LocationSetupInitial : AppDestination("location_setup_initial")
+    data object LocationSetupEdit : AppDestination("location_setup_edit")
     data object AppShell : AppDestination("app_shell")
     data object Home : AppDestination("home")
     data object Search : AppDestination("search")
@@ -31,7 +32,8 @@ sealed class AppDestination(val route: String) {
             Splash,
             Initialization,
             Onboarding,
-            LocationSetup,
+            LocationSetupInitial,
+            LocationSetupEdit,
             AppShell,
             Home,
             Search,

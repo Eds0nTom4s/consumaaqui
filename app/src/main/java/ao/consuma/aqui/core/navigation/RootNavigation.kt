@@ -9,6 +9,7 @@ import ao.consuma.aqui.core.appstate.rememberConsumaAppState
 import ao.consuma.aqui.feature.bootstrap.InitializationGateway
 import ao.consuma.aqui.feature.bootstrap.SplashScreen
 import ao.consuma.aqui.feature.location.LocationSetupRoute
+import ao.consuma.aqui.feature.location.LocationSetupMode
 import ao.consuma.aqui.feature.onboarding.OnboardingScreen
 
 @Composable
@@ -46,17 +47,18 @@ fun RootNavigation(
         composable(AppDestination.Onboarding.route) {
             OnboardingScreen(
                 onOnboardingComplete = {
-                    rootNavController.navigate(AppDestination.LocationSetup.route) {
+                    rootNavController.navigate(AppDestination.LocationSetupInitial.route) {
                         popUpTo(AppDestination.Onboarding.route) { inclusive = true }
                     }
                 }
             )
         }
-        composable(AppDestination.LocationSetup.route) {
+        composable(AppDestination.LocationSetupInitial.route) {
             LocationSetupRoute(
+                mode = LocationSetupMode.INITIAL,
                 onSetupComplete = {
                     rootNavController.navigate(AppDestination.AppShell.route) {
-                        popUpTo(AppDestination.LocationSetup.route) { inclusive = true }
+                        popUpTo(AppDestination.LocationSetupInitial.route) { inclusive = true }
                     }
                 }
             )
@@ -65,12 +67,7 @@ fun RootNavigation(
             val appState = rememberConsumaAppState()
             ConsumaAppShell(
                 appState = appState,
-                isDesignSystemCatalogEnabled = isDesignSystemCatalogEnabled,
-                onNavigateToLocationSetup = {
-                    rootNavController.navigate(AppDestination.LocationSetup.route) {
-                        popUpTo(AppDestination.AppShell.route) { inclusive = false }
-                    }
-                }
+                isDesignSystemCatalogEnabled = isDesignSystemCatalogEnabled
             )
         }
     }

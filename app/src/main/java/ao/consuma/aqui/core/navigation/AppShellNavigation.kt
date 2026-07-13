@@ -11,6 +11,8 @@ import ao.consuma.aqui.feature.developer.DesignSystemCatalogScreen
 import ao.consuma.aqui.feature.help.HelpScreen
 import ao.consuma.aqui.feature.home.HomeScreen
 import ao.consuma.aqui.feature.location.LocationSettingsScreen
+import ao.consuma.aqui.feature.location.LocationSetupMode
+import ao.consuma.aqui.feature.location.LocationSetupRoute
 import ao.consuma.aqui.feature.more.MoreScreen
 import ao.consuma.aqui.feature.orders.OrdersScreen
 import ao.consuma.aqui.feature.search.SearchScreen
@@ -20,7 +22,6 @@ import ao.consuma.aqui.feature.settings.SettingsScreen
 fun AppShellNavigation(
     appState: ConsumaAppState,
     isDesignSystemCatalogEnabled: Boolean,
-    onNavigateToLocationSetup: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -71,7 +72,13 @@ fun AppShellNavigation(
         composable(AppDestination.LocationSettings.route) {
             LocationSettingsScreen(
                 onNavigateBack = appState::navigateBack,
-                onNavigateToLocationSetup = onNavigateToLocationSetup
+                onNavigateToLocationSetup = { appState.navigateTo(AppDestination.LocationSetupEdit) }
+            )
+        }
+        composable(AppDestination.LocationSetupEdit.route) {
+            LocationSetupRoute(
+                mode = LocationSetupMode.EDIT,
+                onSetupComplete = appState::navigateBack
             )
         }
         if (isDesignSystemCatalogEnabled) {

@@ -39,7 +39,8 @@ class ConsumaAppState(
             AppDestination.Orders.route,
             AppDestination.More.route -> true
             AppDestination.Onboarding.route,
-            AppDestination.LocationSetup.route,
+            AppDestination.LocationSetupInitial.route,
+            AppDestination.LocationSetupEdit.route,
             AppDestination.LocationSettings.route,
             AppDestination.Splash.route,
             AppDestination.Initialization.route,

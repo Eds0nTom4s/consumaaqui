@@ -588,3 +588,95 @@ Plano de substituição da memória por DataStore:
 3. Remover InMemoryAppLaunchStateRepository quando não for mais
    necessário para testes.
 4. Garantir migração suave se o esquema de preferências evoluir.
+
+==================================================
+CORRECÇÃO DE AUDITORIA — ONBOARDING-LOCATION-MOCK-CORRECTION-001
+Data: 2026-07-13
+==================================================
+
+CAUSA DO RISCO
+
+O fluxo de edição usava o mesmo destino raiz da configuração inicial.
+Ao confirmar em Mais → Localização → Alterar, LocationSetup navegava para
+um novo AppShell em vez de regressar ao existente. A pilha podia ficar
+AppShell antigo → LocationSetup → AppShell novo, reinicializando também o
+NavController interno e o estado das tabs.
+
+SOLUÇÃO E DISTINÇÃO DE MODOS
+
+Foi criado LocationSetupMode, enum explícito com INITIAL e EDIT, e dois
+destinos não ambíguos: LocationSetupInitial e LocationSetupEdit.
+
+- INITIAL pertence ao RootNavigation. Ao concluir, substitui
+  LocationSetupInitial por AppShell com popUpTo inclusivo. Onboarding já
+  tinha sido removido, portanto Back na Home termina a Activity e nunca
+  recupera onboarding/location setup.
+- EDIT pertence ao NavHost interno do AppShell. Ao concluir executa apenas
+  popBackStack(), regressando a LocationSettings. Não navega para AppShell,
+  não cria outro shell e conserva o NavController e a tab Mais existentes.
+- Back/cancelar na primeira tela de EDIT regressa a LocationSettings. Na
+  escolha manual, Back regressa primeiro à explicação, sem sair do fluxo.
+
+POLÍTICA FINAL DE BACK STACK
+
+Configuração inicial:
+Onboarding → LocationSetupInitial → AppShell/Home
+
+Edição:
+AppShell(Home → Mais → LocationSettings → LocationSetupEdit)
+→ confirmar/pop → LocationSettings → Back → Mais → Back → Home
+
+O AppShell permanece uma única entrada raiz durante toda a edição.
+
+TESTES INSTRUMENTADOS ADICIONADOS/REFORÇADOS
+
+1. initial_setup_replaces_onboarding_stack_and_back_does_not_restore_setup;
+2. more_to_location_settings_change_location (agora valida um AppShell);
+3. confirming_edit_returns_to_existing_shell_and_back_returns_to_more;
+4. back_after_completed_edit_never_reveals_an_old_app_shell;
+5. cancelling_edit_returns_to_location_settings_not_home.
+
+Também foi estabilizado o contrato instrumentável do fluxo: o testTag de
+LocationSetup cobre todos os seus estados e cada item da lista manual é
+explicitamente clicável. O Back da selecção manual passou a ser tratado
+pelo próprio fluxo.
+
+RESULTADOS REAIS — MATRIZ FINAL
+
+- ./gradlew testDebugUnitTest: PASS.
+- ./gradlew testStagingUnitTest: PASS.
+- ./gradlew testReleaseUnitTest: PASS.
+- ./gradlew lintDebug: PASS (sem erros).
+- ./gradlew assembleDebug: PASS.
+- ./gradlew assembleStaging: PASS.
+- ./gradlew assembleRelease: PASS.
+- ./gradlew connectedDebugAndroidTest: PASS.
+
+Execução instrumentada acumulada:
+- 39 testes contabilizados pelo runner;
+- 38 executados com sucesso;
+- 1 skipped condicional (teste específico de variante release dentro da
+  execução debug);
+- 0 falhas;
+- mensagem final do UTP: "Finished 40 tests" (inclui a contabilização do
+  runner/execução; o progresso e XML da suite reportam 39 casos).
+
+Dispositivo real:
+- Samsung SM-S928U1;
+- Android 16;
+- API 36;
+- serial registado pelo runner: R5CX12XNNJX.
+
+ESCOPO
+
+Nenhum GPS, permissão real, DataStore, backend ou funcionalidade comercial
+foi adicionado. Design System e App Shell só foram tocados no contrato de
+navegação estritamente necessário para preservar a instância existente.
+
+ESTADO FINAL
+
+- Branch: android/onboarding-location-mock-001.
+- Correcção validada integralmente em dispositivo.
+- git diff --check: PASS.
+- Commit da correcção criado neste encerramento; SHA completo registado no
+  handoff final para evitar auto-referência do próprio ficheiro versionado.

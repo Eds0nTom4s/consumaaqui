@@ -1,6 +1,7 @@
 package ao.consuma.aqui.feature.location
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -129,11 +130,12 @@ private fun LocationListItem(
         trailingContent = {
             RadioButton(
                 selected = isSelected,
-                onClick = onClick
+                onClick = null
             )
         },
         modifier = modifier
             .fillMaxWidth()
+            .clickable(onClick = onClick)
             .testTag(NavigationTestTags.LOCATION_LIST_ITEM)
     )
 }

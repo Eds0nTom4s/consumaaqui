@@ -2,12 +2,14 @@ package ao.consuma.aqui
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.lifecycle.Lifecycle
 import ao.consuma.aqui.core.navigation.NavigationTestTags
 import ao.consuma.aqui.feature.launch.di.LaunchStateModule
 import ao.consuma.aqui.feature.launch.domain.AppLaunchStateRepository
@@ -29,7 +31,7 @@ class LocationSetupFlowTest {
 
     @get:Rule(order = 0)
     val launchStateRule = LaunchStateRule(
-        setup = { completeOnboarding() },
+        setup = { },
         assign = { appLaunchStateRepository = it }
     )
 
@@ -113,11 +115,37 @@ class LocationSetupFlowTest {
         composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION).assertIsNotDisplayed()
     }
 
+    @Test
+    fun initial_setup_replaces_onboarding_stack_and_back_does_not_restore_setup() {
+        launchLocationSetup()
+        composeTestRule.onNodeWithTag(NavigationTestTags.LOCATION_SKIP).performClick()
+        composeTestRule.onNodeWithTag(NavigationTestTags.HOME).assertIsDisplayed()
+        composeTestRule.onAllNodes(hasTestTag(NavigationTestTags.APP_SHELL)).assertCountEquals(1)
+
+        pressBack()
+
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.activityRule.scenario.state == Lifecycle.State.DESTROYED
+        }
+    }
+
     private fun launchLocationSetup() {
+        composeTestRule.waitUntil(timeoutMillis = 10000) {
+            composeTestRule.onAllNodes(hasTestTag(NavigationTestTags.ONBOARDING))
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        composeTestRule.onNodeWithTag(NavigationTestTags.ONBOARDING_SKIP).performClick()
         composeTestRule.waitUntil(timeoutMillis = 10000) {
             composeTestRule.onAllNodes(hasTestTag(NavigationTestTags.LOCATION_SETUP))
                 .fetchSemanticsNodes().isNotEmpty()
         }
         composeTestRule.onNodeWithTag(NavigationTestTags.LOCATION_SETUP).assertIsDisplayed()
+    }
+
+    private fun pressBack() {
+        composeTestRule.activityRule.scenario.onActivity { activity ->
+            activity.onBackPressedDispatcher.onBackPressed()
+        }
+        composeTestRule.waitForIdle()
     }
 }

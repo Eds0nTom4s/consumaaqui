@@ -13,7 +13,6 @@ import ao.consuma.aqui.core.appstate.ConsumaAppState
 fun ConsumaAppShell(
     appState: ConsumaAppState,
     isDesignSystemCatalogEnabled: Boolean,
-    onNavigateToLocationSetup: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -32,7 +31,6 @@ fun ConsumaAppShell(
         AppShellNavigation(
             appState = appState,
             isDesignSystemCatalogEnabled = isDesignSystemCatalogEnabled,
-            onNavigateToLocationSetup = onNavigateToLocationSetup,
             modifier = Modifier.padding(paddingValues)
         )
     }
