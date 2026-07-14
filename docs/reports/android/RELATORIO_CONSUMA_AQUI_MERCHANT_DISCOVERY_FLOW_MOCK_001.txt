@@ -1,0 +1,712 @@
+RELATÓRIO TÉCNICO
+CONSUMA AQUI ANDROID — MERCHANT-DISCOVERY-FLOW-MOCK-001
+Data da validação final: 2026-07-14
+
+1. RESUMO EXECUTIVO
+
+A fase implementa um fluxo de descoberta de comerciantes inteiramente local e
+determinístico, preparado para futura substituição por API. Home, Pesquisa e
+Merchant Overview consomem um único contrato DiscoveryRepository. A UI não
+conhece a implementação in-memory nem as fixtures. O fluxo termina num Catalog
+Placeholder institucional, sem produtos, preços, carrinho, checkout, pagamento
+ou integração de backend.
+
+A auditoria final encontrou dois tipos de desvio directamente corrigidos:
+
+- MerchantAvailability.OpensAt aceitava String arbitrária; passou a usar
+  java.time.LocalTime e a formatação ficou no mapper de apresentação.
+- 12 strings comprovadamente mortas pela substituição das telas antigas foram
+  removidas. O lint passou de 46 para 34 warnings, mantendo 0 erros.
+
+O commit funcional é ee69dd30da30264307e083aba874c17853e126d4.
+
+2. BRANCH
+
+android/merchant-discovery-flow-mock-001
+
+3. COMMIT BASE
+
+608371650484033be341dbff0a33404ad28d968e
+
+O HEAD inicial foi confirmado exactamente nesse commit antes de qualquer commit
+desta fase. Não foi realizado rebase, merge, squash ou force push.
+
+4. ESTADO INICIAL
+
+- HEAD no commit base aprovado.
+- Implementação completa presente no worktree e ainda não commitada.
+- Nenhum push da branch desta fase.
+- Resultados preliminares conhecidos: 122 unitários por variante; 71
+  instrumentados iniciados, 70 pass e 1 skip; três builds e lint sem erros.
+- A revisão final foi executada sobre o conteúdo efectivo, incluindo ficheiros
+  ainda não rastreados, e não apenas sobre git diff de ficheiros rastreados.
+
+5. ESCOPO
+
+Incluído: domínio Discovery, contrato de repository, implementação in-memory,
+fixtures, Home curada, Pesquisa completa, filtros, ordenação, estado guardado,
+Merchant Overview, Catalog Placeholder, navegação por ID, recursos e testes.
+
+Excluído: catálogo real, produto, categoria de produto, preço de produto,
+carrinho, checkout, pagamento, Retrofit, DTO, endpoint real, cache real,
+telemetria e imagem remota.
+
+6. FLUXO IMPLEMENTADO
+
+Home -> Merchant Overview -> Catalog Placeholder -> Back -> Overview -> Back
+Home -> Ver todos -> Pesquisa
+Pesquisa -> Merchant Overview -> Catalog Placeholder -> Back -> Pesquisa
+
+A navegação transporta exclusivamente merchantId. O AppShell permanece único e
+a Bottom Navigation aparece apenas nos quatro destinos de topo.
+
+7. ARQUITECTURA DISCOVERY
+
+Camadas finais:
+
+- domain/model: modelos Kotlin/JVM independentes de Android.
+- domain/request: pedidos de Home, Pesquisa e Merchant.
+- domain/result: resultados, origem dos dados e erros explícitos.
+- domain/repository: interface DiscoveryRepository.
+- data: fixtures e InMemoryDiscoveryRepository.
+- data/modules: bindings Hilt e dispatcher injectável.
+- presentation/mapper: UiModels, UiText, mappers domínio -> UI.
+- presentation/merchant: Merchant Overview e Catalog Placeholder.
+- feature/home e feature/search: apresentações independentes que partilham o
+  mesmo contrato de domínio.
+
+8. ESTRUTURA DE PACKAGES
+
+Domínio e dados permanecem em feature/discovery. Home continua em feature/home,
+Pesquisa em feature/search e Merchant Overview em
+feature/discovery/presentation/merchant.
+
+Home e Search permanecem features de apresentação distintas porque possuem
+objectivos, estados, eventos, composição e ciclos de interacção diferentes.
+Compartilham DiscoveryRepository porque consultam o mesmo agregado de descoberta
+e as mesmas regras de pesquisa, filtro e ordenação. Uma migração total para
+feature/discovery aumentaria o diff, quebraria histórico e testes e não criaria
+uma fronteira funcional nova. Manter a estrutura custa disciplina nas interfaces
+e mappers, mas evita acoplamento de estados de apresentação.
+
+Critério futuro de reorganização: mover packages somente se várias superfícies
+passarem a compartilhar uma responsabilidade de apresentação real, ou se a
+estrutura actual provocar ciclos, duplicação sustentada ou ownership ambíguo.
+
+9. MODELOS DE DOMÍNIO
+
+MoneyAmount, DiscoveryLocation, MerchantCategory, MerchantAvailability,
+FulfillmentOption, DiscoveryOrderBy, PromotionSummary, MerchantSummary,
+MerchantSection, HomeDiscoveryContent, MerchantSearchContent, MerchantOverview,
+MerchantAddress, MerchantContact e WeeklySchedule.
+
+MerchantAvailability é uma sealed interface com Open, ClosingSoon, OpensAt,
+Closed e Unknown. OpensAt usa LocalTime após a correcção final. WeeklySchedule
+usa DayOfWeek e LocalTime. Não existem tipos Android, Compose, Resources, strings
+localizadas de UI, HTTP status codes, DTOs, Retrofit annotations ou dependências
+de apresentação no domínio.
+
+Booleans mantidos têm significados independentes: isFeatured é curadoria e
+catalogAvailable é capacidade do comerciante. Ausência de rating, contacto,
+imagem, horário ou distância é expressa por nulabilidade, não por flags paralelas.
+
+10. REQUESTS
+
+- HomeDiscoveryRequest(location, selectedCategoryId, query, forceRefresh)
+- DiscoverySearchRequest(query, categoryId, onlyOpen, fulfillmentOptions,
+  orderBy, page, pageSize, location)
+- MerchantRequest(merchantId)
+- DiscoveryPaging.DEFAULT_PAGE_SIZE = 20
+- DiscoveryPaging.MAX_PAGE_SIZE = 100
+
+11. RESULTS
+
+DiscoveryResult<T> define Success(data, source), Empty(data opcional),
+Offline(cachedData opcional, source) e Error(reason). DataSource define MEMORY,
+REMOTE e CACHE, permitindo a implementação remota futura sem alterar a UI.
+
+12. ERROS
+
+DiscoveryError define NetworkUnavailable, LocationRequired, Unauthorized,
+NotFound, Server e Unknown. Não há códigos HTTP no domínio. A camada de dados
+remota deverá mapear falhas de transporte e HTTP para estes erros.
+
+13. DISCOVERYREPOSITORY
+
+Contrato final:
+
+suspend fun home(request: HomeDiscoveryRequest):
+    DiscoveryResult<HomeDiscoveryContent>
+suspend fun search(request: DiscoverySearchRequest):
+    DiscoveryResult<MerchantSearchContent>
+suspend fun merchant(request: MerchantRequest):
+    DiscoveryResult<MerchantOverview>
+
+O contrato é pequeno, sem sobreposição excessiva, e cobre Home, filtros,
+ordenação, Merchant Overview, offline, metadados de paginação e force refresh
+da Home. A pesquisa já inclui page/pageSize; refresh reutiliza o mesmo pedido.
+
+Mapeamento futuro possível, sujeito ao backend:
+
+- home -> endpoint editorial/curado de Home.
+- search -> endpoint paginado de comerciantes.
+- merchant -> endpoint de detalhe público por merchantId.
+
+14. INMEMORYDISCOVERYREPOSITORY
+
+A implementação é determinística, não usa delay artificial, Context, Activity
+ou Compose. Pesquisa, normalização, filtros OR, ordenação e paginação são regras
+do repository. IDs são estáveis; listas retornadas derivam de listas imutáveis e
+nenhuma lista mutável global é exposta. Cenários controláveis preservados:
+CONTENT, EMPTY, ERROR e OFFLINE.
+
+Ordenações possuem desempate final por ID, impedindo resultados instáveis.
+page é normalizada para no mínimo 1 e pageSize para 1..100.
+
+15. FIXTURES
+
+- 5 categorias: Restaurantes, Pastelaria, Bebidas, Mercado e Serviços.
+- 8 comerciantes fictícios.
+- IDs únicos e estáveis.
+- Nomes plausíveis sem representar parceiros comerciais reais.
+- E-mails usam example.invalid e imagens usam domínio .invalid.
+- Contacto telefónico e moradas são explicitamente demonstrativos.
+- Ratings nulos ou entre 0 e 5; contagens e popularidade não negativas.
+- Disponibilidade e modalidades variadas.
+- Overview deriva de MerchantSummary, evitando divergência de factos comuns.
+- Catálogo disponível para sete fixtures e indisponível para Serviços Viana.
+- Campos opcionais ausentes em casos realistas: rating, contacto, horário,
+  promoção, imagem e pedido mínimo.
+
+As fixtures são material de demonstração e teste. Não constituem contrato
+definitivo do backend nem modelo de payload.
+
+16. HOME
+
+A Home é descoberta rápida, não uma listagem vertical pesada. Ordem funcional:
+identidade/localização compacta, pesquisa, categorias, destaques, comerciantes
+próximos com localização ou recomendados sem localização, contexto promocional
+nos cartões e acções Ver todos.
+
+Usa LazyColumn e LazyRow, keys por ID, cartões compactos e scroll saveable. Cada
+secção remove implicitamente duplicados pela origem determinística e possui IDs
+únicos. Proximidade e distância são omitidas sem localização. Merchant Overview
+é aberto somente por ID.
+
+17. PESQUISA
+
+A Pesquisa suporta exploração sem query, resultados com query, Empty contextual,
+Error, OfflineContent, Retry, Refresh, filtros, contagem activa, ordenação,
+limpeza de filtros preservando query e navegação por ID. A listagem apresenta o
+conjunto completo da página mock, actualmente oito comerciantes.
+
+SearchViewModel concentra apenas criação/persistência de critérios, chamada ao
+repository, mapping de estados e callback de navegação. Não foi criada abstracção
+adicional porque não existe ainda fronteira estável que compense a complexidade.
+
+18. FILTROS
+
+- categoria única opcional;
+- aberto agora;
+- modalidades múltiplas: DELIVERY, PICKUP e SERVICE na UI rápida, com DINE_IN
+  suportado pelo domínio/repository;
+- limpar filtros mantém query e mantém a escolha de ordenação;
+- activeCount soma categoria, aberto agora e cada modalidade seleccionada.
+
+19. SEMÂNTICA OR
+
+Quando várias modalidades são seleccionadas, um comerciante é aceite se oferecer
+qualquer uma delas:
+
+merchant.fulfillmentOptions.any(selectedOptions::contains)
+
+Sem modalidade seleccionada, o filtro não restringe resultados. Categoria,
+aberto agora e query combinam-se por AND com o grupo OR de modalidades.
+
+20. ORDENAÇÃO
+
+- NEAREST: distância ascendente, nulos no fim, ID como desempate.
+- TOP_RATED: rating descendente, depois contagem, depois ID.
+- MOST_POPULAR: popularidade descendente, depois ID.
+- FEATURED: destaque, popularidade e ID.
+- NAME: nome normalizado e ID.
+
+NEAREST fica desactivado sem localização; se a localização desaparecer enquanto
+está seleccionado, o ViewModel regressa a FEATURED. Não é exibida falsa precisão.
+
+21. PAGINAÇÃO PREPARADA
+
+DiscoverySearchRequest inclui page/pageSize e MerchantSearchContent inclui page,
+pageSize, totalCount e hasMore. A UI consome deliberadamente a primeira página.
+A futura paginação real deve manter o request/resultado, acrescentar cursor apenas
+se o backend o exigir e encapsular a estratégia na camada de dados/ViewModel.
+
+22. SAVEDSTATEHANDLE
+
+SearchViewModel persiste query, categoryId, onlyOpen, conjunto de modalidades e
+orderBy. Valores enum desconhecidos são ignorados com fallback seguro. Scroll e
+expansão de filtros/ordenação usam estado saveable do Compose. Rotação e troca de
+tabs preservam critérios e a selecção Search.
+
+23. MERCHANT OVERVIEW
+
+Estados: Loading, Content, OfflineContent, Error e NotFound. Conteúdo: banner e
+logótipo com placeholders, nome, categoria, disponibilidade, rating, descrições,
+modalidades, morada, horário, contacto mock, promoção e disponibilidade de
+catálogo. Possui retry e voltar. O carregamento usa MerchantRequest(merchantId).
+
+Não existem acções reais de chamada, WhatsApp, e-mail, mapa ou navegação externa.
+Não existem produtos no Overview.
+
+24. CATALOG PLACEHOLDER
+
+Recebe somente merchantId. ID vazio é tratado com mensagem explícita. Exibe
+título, mensagem institucional e botão voltar, com Bottom Navigation oculta.
+Não contém produto, categoria de produto, preço, carrinho ou CTA de compra.
+
+25. NAVEGAÇÃO
+
+Rotas novas:
+
+- merchant/{merchantId}
+- merchant/{merchantId}/catalog
+
+Home/Search navegam para Overview por ID. Overview navega para catálogo por ID.
+Back retorna correctamente, a Bottom Navigation reaparece nos destinos de topo e
+o AppShell não é duplicado. A rota de Design System continua condicionada ao
+ambiente permitido.
+
+26. CODIFICAÇÃO DE IDS
+
+AppDestination.merchantOverview e catalogPlaceholder usam Uri.encode. Argumentos
+são recuperados pelo NavType.StringType/SavedStateHandle. IDs com barra, espaço,
+interrogação e cardinal foram testados por encode/decode. Argumento vazio produz
+NotFound no Overview ou mensagem de ID inválido no placeholder. Nenhum objecto de
+comerciante é serializado na navegação.
+
+27. UIMODELS
+
+Home usa LocationUiModel, CategoryUiModel e MerchantCompactUiModel. Pesquisa usa
+SearchCriteriaUiState, SearchFiltersUiModel, SearchResultsUiModel e
+MerchantListItemUiModel. Overview usa MerchantOverviewUiModel. UiText representa
+resources, plurals, junções e conteúdo dinâmico fora do domínio.
+
+28. MAPPERS
+
+DiscoveryUiMapper centraliza categoria, disponibilidade, modalidade, distância,
+rating, valor monetário, horário, opções de ordenação e modelos de cartões.
+HomeUiMapper é uma fachada de compatibilidade para manter o package histórico da
+Home. DTO mapper não existe nesta fase.
+
+29. ACESSIBILIDADE
+
+Campos possuem labels, cartões têm descrição composta e Role.Button, chips
+anunciam selecção, imagens decorativas não duplicam leitura, banner/logótipo têm
+descrições e estados de erro/vazio expõem acções. Testes de apresentação cobrem
+tema escuro e escalas 1.3/1.5. O lint não reportou acessibilidade introduzida.
+
+30. PERFORMANCE
+
+LazyColumn/LazyRow usam keys estáveis. Não há delay artificial, rede, bitmap real
+ou trabalho bloqueante no main thread. Filtro e ordenação executam no dispatcher
+injectado. O volume mock é pequeno; paginação limita pageSize a 100.
+
+31. PREVIEWS
+
+Existem previews para Loading, Content, Empty, Error, Offline, NotFound, dados
+parciais, catálogo indisponível, cartões e temas escuros relevantes. Previews usam
+UiModels e não fixtures/repository.
+
+32. DEPENDÊNCIAS
+
+Adicionadas exactamente duas dependências:
+
+- androidx.lifecycle:lifecycle-runtime-compose:2.6.1, implementation. Necessária
+  para collectAsStateWithLifecycle em Routes Compose; alinha com a versão já
+  usada por lifecycle-runtime-ktx.
+- org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1, testImplementation.
+  Necessária para dispatchers e controlo determinístico de ViewModels em testes.
+
+Nenhuma outra dependência entrou. namespace/applicationId continuam
+ao.consuma.aqui; compileSdk/targetSdk 36; minSdk 26; Java/JVM 17. AndroidManifest,
+SDKs, package, versionCode e versionName não mudaram.
+
+33. TESTES UNITÁRIOS
+
+Execução final após ./gradlew clean:
+
+- Debug: total 122; pass 122; failures 0; errors 0; skipped 0.
+- Staging: total 122; pass 122; failures 0; errors 0; skipped 0.
+- Release: total 122; pass 122; failures 0; errors 0; skipped 0.
+
+Cobrem contrato, fixtures, repository, OR, filtros, ordenação, paginação,
+ausência de localização, mappers e ViewModels de Home/Search/Overview.
+
+34. TESTES INSTRUMENTADOS
+
+- Comando: ./gradlew connectedDebugAndroidTest
+- Iniciados/reportados no XML: 71
+- Pass: 70
+- Skipped: 1 (teste exclusivo da política Release em execução Debug)
+- Failures: 0
+- Errors: 0
+- Duração no XML: 113,774 s
+- Duração Gradle total: 2 min 47 s
+- Dispositivo: Samsung SM-S928U1, serial R5CX12XNNJX
+- Android: 16
+- API: 36
+- UTP: executado; test-result.pb, test-result.textproto, utp.0.log e profile.pb
+  gerados em app/build/outputs/androidTest-results/connected/debug/SM-S928U1 - 16/
+- XML: app/build/outputs/androidTest-results/connected/debug/
+  TEST-SM-S928U1 - 16-_app-.xml
+- HTML: app/build/reports/androidTests/connected/debug/index.html
+
+A mensagem de consola “Finished 72 tests” inclui contabilização do harness; a
+fonte canónica XML reporta 71 casos, 70 pass e 1 skip.
+
+35. COBERTURA ACUMULADA
+
+Toda a cobertura anterior permaneceu: AppShell, ambientes, Design System,
+onboarding, localização, Home, tabs, More, snackbar e rotação. Foram adicionadas
+coberturas de Pesquisa, filtros OR, persistência, ID reservado, Overview,
+NotFound, Offline e Catalog Placeholder. Nenhum teste anterior foi removido sem
+substituição: o teste do repository Home antigo foi absorvido pela suite mais
+abrangente do DiscoveryRepository.
+
+36. BUILDS
+
+- ./gradlew assembleDebug: PASS
+- ./gradlew assembleStaging: PASS
+- ./gradlew assembleRelease: PASS
+
+APKs gerados localmente e ignorados pelo Git. O Release permanece unsigned como
+na configuração existente.
+
+37. LINT
+
+./gradlew lintDebug: PASS
+Erros: 0
+Warnings finais: 34
+Warnings antes da correcção de recursos mortos: 46
+Não foi adicionada qualquer supressão.
+
+38. WARNINGS
+
+Classificação A — introduzidos nesta fase:
+
+- 14 detectados antes da correcção: 12 UnusedResources e 2 avisos de versão.
+- Os 12 UnusedResources foram corrigidos em app/src/main/res/values/strings.xml.
+- Permanecem 2 informativos:
+  - gradle/libs.versions.toml:8, lifecycle-runtime-compose 2.6.1 possui versão
+    mais recente. Risco baixo; versão mantida para alinhar lifecycle-runtime-ktx.
+  - gradle/libs.versions.toml:9, coroutines-test 1.8.1 possui versão mais recente.
+    Risco baixo; actualização isolada quebraria alinhamento validado.
+
+Classificação B — herdados: 32.
+
+- 1 RedundantLabel no AndroidManifest.
+- 16 avisos de versões existentes de Gradle/AGP/dependências/plugins.
+- 1 ModifierParameter em core/designsystem/components/ConsumaFeedback.kt:65.
+- 7 cores antigas não usadas em app/src/main/res/values/colors.xml.
+- 7 strings antigas não usadas em app/src/main/res/values/strings.xml
+  (foundation_ready_title, foundation_ready_subtitle, validate_navigation,
+  navigation_success, institutional_title, institutional_subtitle,
+  snackbar_dismiss).
+
+Classificação C — informativos: os 18 avisos de versões (16 herdados e 2 novos).
+
+Classificação D — relevantes mas fora do escopo funcional desta fase:
+ModifierParameter e 14 recursos herdados sem uso. Risco baixo de tamanho/manutenção;
+plano: limpeza dedicada da fundação/design system com validação de consumidores.
+
+Classificação E — falsos positivos/limitações conhecidas:
+nenhum falso positivo confirmado. O detector de recursos pode ignorar referências
+exclusivas de testes, mas os recursos listados foram verificados no source set.
+
+39. VALIDAÇÃO MANUAL
+
+Validação visual assistida no APK Debug e validação de interacção no dispositivo:
+
+HOME — PASS: localização, categorias, destaques, próximos, recomendados sem
+localização (por teste), cartões compactos e Ver todos. Captura clara confirmou
+secções horizontais, estados, distância e layout.
+
+PESQUISA — PASS: exploração, query, filtros múltiplos, OR, limpar filtros,
+ordenações, Empty, Error, Offline, Retry, rotação e troca de tabs. Captura clara
+confirmou lista completa, contagem, filtros e ordenação. Cenários não injectáveis
+no APK normal foram confirmados pelos testes conectados.
+
+MERCHANT OVERVIEW — PASS: completo, parcial, offline, NotFound, catálogo
+disponível/indisponível e Back, cobertos por testes de tela e fluxo no dispositivo.
+
+CATALOG PLACEHOLDER — PASS: abertura, merchantId, Back e ausência de produtos,
+testados no fluxo Home/Pesquisa e em teste de tela dedicado.
+
+Tema claro foi inspeccionado em Home/Pesquisa. Tema escuro e font scale 1.3/1.5
+foram exercitados por testes Compose no mesmo dispositivo. O valor inicial do
+dispositivo foi restaurado no fim: ui_night_mode=2 e font_scale=1.0.
+
+40. LOGCAT
+
+Foi pesquisado FATAL EXCEPTION, processo ao.consuma.aqui e ANR nos logcats por
+teste: nenhum resultado. O logcat global continha apenas mensagens do sistema e
+serviços Samsung/rede sem relação com o package. Não houve crash ou ANR da app.
+
+41. FICHEIROS CRIADOS
+
+Principais grupos:
+
+- 4 testes instrumentados: DiscoverySearchFlowTest,
+  MerchantIdRouteEncodingTest, MerchantPresentationTest,
+  SearchPresentationTest.
+- 18 ficheiros em feature/discovery: data, módulos, domínio, mappers e merchant.
+- 4 ficheiros de apresentação Search: Route, UiEvent, UiState e ViewModel.
+- 6 testes unitários Discovery/Search.
+- Este relatório documental.
+
+42. FICHEIROS ALTERADOS
+
+- app/build.gradle.kts e gradle/libs.versions.toml.
+- testes existentes de Home e restauração de Search.
+- ConsumaAppState, AppDestination, AppShellNavigation e NavigationTestTags.
+- ConsumaTextField e ConsumaSize.
+- Home Route/Screen/UiEvent/UiMapper/UiModel/UiState/ViewModel.
+- SearchScreen.
+- strings.xml.
+- testes HomeUiMapperTest e HomeViewModelTest.
+
+43. FICHEIROS REMOVIDOS
+
+- feature/home/data/HomeDiscoveryDataModule.kt
+- feature/home/data/HomeDiscoveryFixtures.kt
+- feature/home/data/InMemoryHomeDiscoveryRepository.kt
+- feature/home/domain/model/HomeDiscoveryModels.kt
+- feature/home/domain/repository/HomeDiscoveryRepository.kt
+- feature/home/presentation/MerchantDetailsPlaceholderScreen.kt
+- teste antigo InMemoryHomeDiscoveryRepositoryTest.kt
+
+Foram removidos porque o contrato Home específico foi substituído pelo contrato
+Discovery único e o placeholder antigo pelo Overview real desta fase. Cobertura
+equivalente ou superior foi preservada.
+
+44. RISCOS
+
+- Divergência de nomes/campos entre fixtures e payload futuro.
+- Paginação do backend diferente de page/pageSize.
+- Semântica de filtros/modalidades ou taxonomia de categorias diferente.
+- Disponibilidade calculada no backend e rating eventualmente ausente.
+- Distância dependente de serviço/localização externa.
+- Promoções editoriais, imagens e horário com formatos diferentes.
+- NotFound, offline e freshness de cache com comportamento diferente.
+- Pesquisa por acentos pode ter semântica distinta no servidor.
+
+Mitigação: validar contrato com backend antes de DTOs, manter domínio independente,
+usar DTO mappers, testes de contrato, fixtures derivadas de payloads aprovados,
+versionamento de API e impedir DTOs de atravessar a camada de dados.
+
+45. PENDÊNCIAS
+
+Não há pendência funcional desta fase. Pendências futuras, fora do escopo:
+contrato backend aprovado, RemoteDiscoveryRepository, API/DTOs, cache/freshness,
+conectividade, paginação real, carregamento de imagem e telemetria aprovada.
+
+46. PLANO DE TRANSIÇÃO MOCK -> API
+
+MANTIDOS
+
+- HomeScreen, HomeRoute, HomeViewModel, HomeUiState, HomeUiEvent.
+- SearchScreen, SearchRoute, SearchViewModel, SearchUiState, SearchUiEvent.
+- MerchantOverviewScreen e MerchantOverviewViewModel.
+- UI Models e mappers domínio -> UI.
+- DiscoveryRepository, modelos, requests, resultados e erros de domínio.
+- navegação, testes de apresentação e testes unitários de ViewModels.
+
+SUBSTITUÍDOS
+
+- InMemoryDiscoveryRepository.
+- DiscoveryFixtures como fonte de runtime.
+
+ADICIONADOS
+
+- RemoteDiscoveryRepository.
+- DiscoveryApi.
+- DTOs e DTO mappers.
+- network error mapper.
+- cache e política de freshness.
+- conectividade.
+- paginação real.
+- imagem remota.
+- telemetria, apenas se aprovada.
+
+Sequência proposta: aprovar contrato -> criar API/DTOs na camada data -> criar
+mappers DTO/domínio -> implementar remote/cache -> executar testes de contrato ->
+trocar binding Hilt -> manter fixtures apenas para testes/previews -> validar
+offline, paginação e migração sem alterar apresentação.
+
+47. MATRIZ DE TRANSIÇÃO
+
+COMPONENTE | ESTADO ACTUAL | ESTADO FUTURO | MANTÉM | SUBSTITUI | RISCO
+DiscoveryRepository | interface domínio | mesma interface | sim | não | baixo
+InMemoryDiscoveryRepository | runtime mock | teste/dev | parcial | runtime | baixo
+RemoteDiscoveryRepository | inexistente | implementação data | n/a | mock | médio
+HomeViewModel | usa contrato | igual | sim | não | baixo
+SearchViewModel | usa contrato | paginação real | sim | fonte | médio
+MerchantOverviewViewModel | usa contrato/ID | igual | sim | fonte | baixo
+requests | domínio estável | mapeados a query | sim | não | médio
+resultados | estados explícitos | remote/cache | sim | não | baixo
+erros | domínio | mapper de rede | sim | não | médio
+domínio | Kotlin puro | igual | sim | não | médio
+UiModels | presentation | igual | sim | não | baixo
+mappers UI | domínio -> UI | igual | sim | não | baixo
+fixtures | fonte runtime/teste | apenas teste | parcial | runtime | baixo
+API | inexistente | DiscoveryApi | n/a | n/a | alto
+DTOs | inexistentes | payloads versionados | n/a | n/a | alto
+cache | inexistente | data/cache | n/a | n/a | alto
+testes | unit/instrumented mock | + contrato/API/cache | sim | não | médio
+
+48. PROPOSTA DE API
+
+Proposta sujeita a auditoria e aprovação do backend; estes endpoints não são
+declarados como existentes:
+
+GET /public/discovery/home
+GET /public/discovery/merchants
+GET /public/discovery/merchants/{merchantId}
+
+Parâmetros possíveis: locationId, latitude, longitude, query, categoryId,
+openNow, fulfillment, sort, page e size.
+
+Não foram criados DTOs, Retrofit ou cliente HTTP nesta fase.
+
+49. ESTADO DO WORKTREE
+
+Após o commit funcional, o worktree ficou limpo. Durante a criação deste
+relatório, este ficheiro é a única alteração documental prevista. O estado final
+limpo e a igualdade local/remoto devem ser confirmados após o commit documental
+e o push, e registados na resposta final do agente.
+
+50. CONFIRMAÇÃO DE ESCOPO
+
+A entrega contém somente descoberta mock, apresentação e preparação de contrato.
+Não implementa catálogo real, produto, categoria de produto, preço, carrinho,
+checkout, pagamento, backend, Retrofit ou endpoint. Não inicia a fase 07.
+
+ANÁLISE ARQUITECTURAL
+
+Decisões tomadas
+
+- Repository unificado para Home, Pesquisa e Overview: os três casos consultam o
+  mesmo agregado de descoberta e precisam de regras coerentes de localização,
+  disponibilidade e merchantId.
+- Apresentações Home/Search separadas: Home é curadoria rápida; Search é exploração
+  completa e stateful. Reutilizar ViewModel/UiState criaria estados impossíveis.
+- Merchant Overview permanece em Discovery porque é o detalhe público que fecha
+  o fluxo de descoberta; ainda não existe domínio transaccional de comerciante.
+- Catálogo fica fora: produtos, preços e compra exigem contratos próprios não
+  aprovados nesta fase.
+- Paginação preparada no contrato, sem UI de infinite scroll prematura.
+- Mock substituível por binding Hilt e interface de domínio.
+
+Alternativas consideradas e rejeitadas
+
+- Repository separado por tela: rejeitado por duplicar pesquisa, filtros,
+  fixtures e conceitos de merchant.
+- Mover Home e Search inteiras para feature/discovery: rejeitado pelo alto custo
+  mecânico e ausência de benefício funcional.
+- Passar MerchantSummary na rota: rejeitado por fragilidade, tamanho e estado
+  obsoleto; passa-se apenas ID.
+- Criar DTO/Retrofit antecipadamente: rejeitado porque o backend não foi auditado.
+- Implementar catálogo mínimo: rejeitado por expandir escopo e criar contrato
+  transaccional falso.
+
+Impacto futuro e oportunidades de reutilização
+
+DiscoveryRepository, requests/resultados, UiModels, mappers e estados permitem
+trocar a fonte sem redesenhar UI. Merchant cards e mapeamento de disponibilidade
+podem ser reutilizados em favoritos ou recomendações desde que continuem no
+contexto de descoberta. A interface reduz o custo de testes e de remote/cache.
+
+Riscos técnicos e custo de manutenção
+
+O maior risco é divergência do backend, não a apresentação. Manter o contrato
+unificado custa coordenação quando endpoints evoluírem em ritmos diferentes, mas
+evita contratos concorrentes. Caso métodos passem a exigir autenticação,
+consistência transaccional ou ownership distinto, a interface poderá ser
+segregada sem mover a UI.
+
+Estratégia de cache futura
+
+Cache pertence à camada de dados. RemoteDiscoveryRepository poderá coordenar
+remote/cache, DataSource indicará a origem e Offline transportará dados stale.
+Freshness deve ser explícita e testada. ViewModels não consultam conectividade
+directamente.
+
+Estratégia de substituição do mock
+
+Criar RemoteDiscoveryRepository e alterar apenas o binding Hilt. Fixtures deixam
+de ser fonte runtime e permanecem em testes/previews. DTOs são mapeados para o
+domínio na camada data; nunca chegam ao ViewModel ou composable.
+
+Dívida técnica consciente
+
+- HomeUiMapper é fachada de compatibilidade e pode ser removida se a Home adoptar
+  directamente DiscoveryUiMapper numa reorganização futura.
+- UI consome apenas a primeira página apesar do contrato paginado.
+- Imagens remotas ainda são placeholders.
+- Warnings herdados de fundação/design system permanecem classificados.
+- forceRefresh é explícito na Home; Search usa repetição do request no refresh.
+  Unificação só deve ocorrer quando existir política real de freshness.
+
+Critérios para MerchantRepository futuro
+
+Criar MerchantRepository somente se Merchant adquirir responsabilidades além de
+descoberta pública: gestão autenticada, perfil do parceiro, catálogo, operações,
+pedidos ou actualizações transaccionais; ou se Overview exigir ciclo de vida/cache
+independente que torne DiscoveryRepository instável. Não criar apenas por nome.
+
+FRONTEIRAS QUE NÃO DEVEM SER QUEBRADAS
+
+- UI não conhece repository concreto.
+- ViewModel não conhece Retrofit.
+- Domínio não conhece Android.
+- DTO não chega à UI.
+- Fixture não chega ao composable.
+- Navegação passa apenas ID.
+- Search não reutiliza HomeViewModel.
+- Home não reutiliza SearchUiState.
+- Merchant Overview não implementa catálogo.
+- Catalog Placeholder não implementa produtos.
+- Filtros não são aplicados no composable.
+- Strings localizadas não entram no domínio.
+- Cache futuro fica na camada de dados.
+
+AUDITORIA DE CONFORMIDADE — 20 CONFIRMAÇÕES
+
+01 PASS — Home, Pesquisa e Overview usam DiscoveryRepository.
+02 PASS — UI não conhece InMemoryDiscoveryRepository.
+03 PASS — fixtures não estão em composables/ViewModels.
+04 PASS — domínio não depende de Android/Compose.
+05 PASS — Home e Pesquisa usam UiModels.
+06 PASS — Overview carrega por merchantId.
+07 PASS — Catalog Placeholder recebe apenas merchantId.
+08 PASS — IDs reservados são codificados/recuperados em testes.
+09 PASS — modalidades aceitam múltipla selecção.
+10 PASS — semântica das modalidades é OR.
+11 PASS — NEAREST/distância não criam precisão sem localização.
+12 PASS — query, filtros e ordenação são preservados.
+13 PASS — Home usa secções horizontais compactas.
+14 PASS — Home apresenta secções curadas.
+15 PASS — Pesquisa apresenta listagem completa da página.
+16 PASS — Overview não contém produtos.
+17 PASS — Catalog Placeholder não contém catálogo real.
+18 PASS — Bottom Navigation fica oculta nos destinos secundários.
+19 PASS — AppShell não é duplicado.
+20 PASS — cobertura anterior preservada e ampliada.
+
+Desvios encontrados e correcções
+
+- Horário OpensAt stringly-typed -> LocalTime no domínio e formatação no mapper.
+- 12 resources mortos desta fase -> removidos sem suppress.
+- Lambda de navegação com parâmetro não usado -> parâmetro removido.
+
+FIM DO RELATÓRIO
