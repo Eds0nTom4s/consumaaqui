@@ -9,11 +9,12 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performScrollToIndex
 import ao.consuma.aqui.core.navigation.NavigationTestTags
-import ao.consuma.aqui.feature.home.data.HomeDiscoveryDataModule
-import ao.consuma.aqui.feature.home.data.InMemoryHomeDiscoveryRepository
-import ao.consuma.aqui.feature.home.data.MockHomeScenario
-import ao.consuma.aqui.feature.home.domain.repository.HomeDiscoveryRepository
+import ao.consuma.aqui.feature.discovery.data.InMemoryDiscoveryRepository
+import ao.consuma.aqui.feature.discovery.data.MockDiscoveryScenario
+import ao.consuma.aqui.feature.discovery.data.modules.DiscoveryDataModule
+import ao.consuma.aqui.feature.discovery.domain.repository.DiscoveryRepository
 import ao.consuma.aqui.feature.launch.di.LaunchStateModule
 import ao.consuma.aqui.feature.launch.domain.AppLaunchStateRepository
 import ao.consuma.aqui.feature.launch.domain.InMemoryAppLaunchStateRepository
@@ -26,15 +27,15 @@ import org.junit.Rule
 import org.junit.Test
 
 @HiltAndroidTest
-@UninstallModules(LaunchStateModule::class, HomeDiscoveryDataModule::class)
+@UninstallModules(LaunchStateModule::class, DiscoveryDataModule::class)
 class HomeDiscoveryTest {
-    private val homeRepository = InMemoryHomeDiscoveryRepository()
+    private val homeRepository = InMemoryDiscoveryRepository()
 
     @BindValue @JvmField
     var appLaunchStateRepository: AppLaunchStateRepository = InMemoryAppLaunchStateRepository()
 
     @BindValue @JvmField
-    var homeDiscoveryRepository: HomeDiscoveryRepository = homeRepository
+    var discoveryRepository: DiscoveryRepository = homeRepository
 
     @get:Rule(order = 0)
     val launchStateRule = LaunchStateRule(
@@ -63,30 +64,38 @@ class HomeDiscoveryTest {
         composeTestRule.onNodeWithText("Doce Embondeiro").assertIsDisplayed()
         composeTestRule.onNodeWithText("Sabor da Maianga").assertIsNotDisplayed()
         composeTestRule.onNodeWithTag("${NavigationTestTags.HOME_CATEGORY}_all").performClick()
-        composeTestRule.onNodeWithText("Sabor da Maianga").assertIsDisplayed()
+        composeTestRule.onNodeWithTag(NavigationTestTags.HOME_LIST).performScrollToIndex(5)
+        composeTestRule.onNodeWithTag(NavigationTestTags.HOME_FEATURED_LIST).performScrollToIndex(0)
+        composeTestRule.onNodeWithTag("${NavigationTestTags.HOME_MERCHANT}_sabor-maianga")
+            .assertIsDisplayed()
     }
-    @Test fun merchant_opens_placeholder_and_back_returns_home() {
+    @Test fun merchant_opens_overview_catalog_placeholder_and_back_preserves_home() {
         waitForHome()
         composeTestRule.onAllNodes(hasTestTag("${NavigationTestTags.HOME_MERCHANT}_sabor-maianga"))[0].performClick()
-        composeTestRule.onNodeWithTag(NavigationTestTags.MERCHANT_PLACEHOLDER).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(NavigationTestTags.MERCHANT_OVERVIEW).assertIsDisplayed()
+        composeTestRule.onNodeWithText("Sabor da Maianga").assertIsDisplayed()
+        composeTestRule.onNodeWithTag(NavigationTestTags.MERCHANT_VIEW_CATALOG).performClick()
+        composeTestRule.onNodeWithTag(NavigationTestTags.CATALOG_PLACEHOLDER).assertIsDisplayed()
+        pressBack()
+        composeTestRule.onNodeWithTag(NavigationTestTags.MERCHANT_OVERVIEW).assertIsDisplayed()
         pressBack()
         composeTestRule.onNodeWithTag(NavigationTestTags.HOME).assertIsDisplayed()
     }
     @Test fun empty_scenario_presents_action() {
-        waitForHome(); homeRepository.scenario = MockHomeScenario.EMPTY
+        waitForHome(); homeRepository.scenario = MockDiscoveryScenario.EMPTY
         composeTestRule.onNodeWithTag(NavigationTestTags.HOME_REFRESH).performClick()
         composeTestRule.onNodeWithTag(NavigationTestTags.HOME_EMPTY).assertIsDisplayed()
     }
     @Test fun error_scenario_retries() {
-        waitForHome(); homeRepository.scenario = MockHomeScenario.ERROR
+        waitForHome(); homeRepository.scenario = MockDiscoveryScenario.ERROR
         composeTestRule.onNodeWithTag(NavigationTestTags.HOME_REFRESH).performClick()
         composeTestRule.onNodeWithTag(NavigationTestTags.HOME_ERROR).assertIsDisplayed()
-        homeRepository.scenario = MockHomeScenario.CONTENT
+        homeRepository.scenario = MockDiscoveryScenario.CONTENT
         composeTestRule.onNodeWithText("Tentar Novamente").performClick()
         composeTestRule.onNodeWithText("Sabor da Maianga").assertIsDisplayed()
     }
     @Test fun offline_banner_keeps_content_accessible() {
-        waitForHome(); homeRepository.scenario = MockHomeScenario.OFFLINE
+        waitForHome(); homeRepository.scenario = MockDiscoveryScenario.OFFLINE
         composeTestRule.onNodeWithTag(NavigationTestTags.HOME_REFRESH).performClick()
         composeTestRule.onNodeWithTag(NavigationTestTags.HOME_OFFLINE).assertIsDisplayed()
         composeTestRule.onNodeWithText("Sabor da Maianga").assertIsDisplayed()

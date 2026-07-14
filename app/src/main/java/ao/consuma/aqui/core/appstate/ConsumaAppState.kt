@@ -42,7 +42,8 @@ class ConsumaAppState(
             AppDestination.LocationSetupInitial.route,
             AppDestination.LocationSetupEdit.route,
             AppDestination.LocationSettings.route,
-            AppDestination.MerchantDetails.route,
+            AppDestination.MerchantOverview.route,
+            AppDestination.CatalogPlaceholder.route,
             AppDestination.Splash.route,
             AppDestination.Initialization.route,
             AppDestination.AppShell.route -> false
@@ -55,7 +56,8 @@ class ConsumaAppState(
     fun navigateToTopLevelDestination(destination: AppDestination) {
         val returnedToExistingDestination = navController.popBackStack(
             route = destination.route,
-            inclusive = false
+            inclusive = false,
+            saveState = true
         )
         if (!returnedToExistingDestination) {
             navController.navigate(destination.route) {

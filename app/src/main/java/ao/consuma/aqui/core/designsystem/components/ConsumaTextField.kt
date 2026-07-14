@@ -65,6 +65,7 @@ fun ConsumaSearchField(
     query: String,
     onQueryChange: (String) -> Unit,
     modifier: Modifier = Modifier,
+    label: String? = null,
     placeholder: String? = null,
     enabled: Boolean = true
 ) {
@@ -72,6 +73,7 @@ fun ConsumaSearchField(
         value = query,
         onValueChange = onQueryChange,
         modifier = modifier,
+        label = label,
         placeholder = placeholder ?: stringResource(R.string.search_placeholder),
         leadingIcon = Icons.Default.Search,
         enabled = enabled,

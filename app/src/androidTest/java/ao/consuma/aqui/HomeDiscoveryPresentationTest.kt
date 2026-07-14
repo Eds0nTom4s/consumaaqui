@@ -23,7 +23,7 @@ class HomeDiscoveryPresentationTest {
         composeTestRule.onNodeWithTag(NavigationTestTags.HOME_LOADING).assertIsDisplayed()
     }
     @Test fun empty_composes_with_action() {
-        composeTestRule.setContent { HomeScreen(HomeUiState.Empty(null, listOf(CategoryUiModel(null, "Todos")), "", null), {}) }
+        composeTestRule.setContent { HomeScreen(HomeUiState.Empty(null, listOf(CategoryUiModel(null, ao.consuma.aqui.feature.discovery.presentation.mapper.UiText.Resource(R.string.search_filter_all))), "", null), {}) }
         composeTestRule.onNodeWithTag(NavigationTestTags.HOME_EMPTY).assertIsDisplayed()
     }
     @Test fun error_composes_with_retry() {
@@ -37,7 +37,7 @@ class HomeDiscoveryPresentationTest {
     @Test fun increased_font_scale_composes_without_critical_crash() {
         composeTestRule.setContent {
             CompositionLocalProvider(LocalDensity provides Density(1f, 1.5f)) {
-                HomeScreen(HomeUiState.Empty(null, listOf(CategoryUiModel(null, "Todos")), "", null), {})
+                HomeScreen(HomeUiState.Empty(null, listOf(CategoryUiModel(null, ao.consuma.aqui.feature.discovery.presentation.mapper.UiText.Resource(R.string.search_filter_all))), "", null), {})
             }
         }
         composeTestRule.onNodeWithTag(NavigationTestTags.HOME_EMPTY).assertIsDisplayed()

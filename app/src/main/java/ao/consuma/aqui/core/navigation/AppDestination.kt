@@ -1,5 +1,6 @@
 package ao.consuma.aqui.core.navigation
 
+import android.net.Uri
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -25,7 +26,8 @@ sealed class AppDestination(val route: String) {
     data object Help : AppDestination("help")
     data object About : AppDestination("about")
     data object LocationSettings : AppDestination("location_settings")
-    data object MerchantDetails : AppDestination("merchant/{merchantId}")
+    data object MerchantOverview : AppDestination("merchant/{merchantId}")
+    data object CatalogPlaceholder : AppDestination("merchant/{merchantId}/catalog")
     data object DesignSystemCatalog : AppDestination("design_system_catalog")
 
     companion object {
@@ -44,11 +46,13 @@ sealed class AppDestination(val route: String) {
             Help,
             About,
             LocationSettings,
-            MerchantDetails,
+            MerchantOverview,
+            CatalogPlaceholder,
             DesignSystemCatalog
         )
 
-        fun merchantDetails(merchantId: String): String = "merchant/$merchantId"
+        fun merchantOverview(merchantId: String): String = "merchant/${Uri.encode(merchantId)}"
+        fun catalogPlaceholder(merchantId: String): String = "merchant/${Uri.encode(merchantId)}/catalog"
     }
 }
 

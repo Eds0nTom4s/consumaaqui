@@ -1,6 +1,7 @@
 package ao.consuma.aqui
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -49,12 +50,13 @@ class SearchStateRestorationTest {
         composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAV_SEARCH).performClick()
         composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH).assertIsDisplayed()
 
-        composeTestRule.onNodeWithTag("search_field").performTextInput("café")
+        composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_FIELD).performTextInput("café")
 
         composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAV_HOME).performClick()
         composeTestRule.onNodeWithTag(NavigationTestTags.HOME).assertIsDisplayed()
 
         composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAV_SEARCH).performClick()
         composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_FIELD).assertTextContains("café")
     }
 }

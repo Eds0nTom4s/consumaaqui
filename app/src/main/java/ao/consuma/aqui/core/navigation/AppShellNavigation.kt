@@ -12,13 +12,14 @@ import ao.consuma.aqui.feature.about.AboutScreen
 import ao.consuma.aqui.feature.developer.DesignSystemCatalogScreen
 import ao.consuma.aqui.feature.help.HelpScreen
 import ao.consuma.aqui.feature.home.presentation.HomeRoute
-import ao.consuma.aqui.feature.home.presentation.MerchantDetailsPlaceholderScreen
+import ao.consuma.aqui.feature.discovery.presentation.merchant.CatalogPlaceholderScreen
+import ao.consuma.aqui.feature.discovery.presentation.merchant.MerchantOverviewRoute
 import ao.consuma.aqui.feature.location.LocationSettingsScreen
 import ao.consuma.aqui.feature.location.LocationSetupMode
 import ao.consuma.aqui.feature.location.LocationSetupRoute
 import ao.consuma.aqui.feature.more.MoreScreen
 import ao.consuma.aqui.feature.orders.OrdersScreen
-import ao.consuma.aqui.feature.search.SearchScreen
+import ao.consuma.aqui.feature.search.SearchRoute
 import ao.consuma.aqui.feature.settings.SettingsScreen
 
 @Composable
@@ -36,12 +37,17 @@ fun AppShellNavigation(
             HomeRoute(
                 onNavigateToLocationSettings = { appState.navigateTo(AppDestination.LocationSettings) },
                 onNavigateToMerchant = { merchantId ->
-                    appState.navController.navigate(AppDestination.merchantDetails(merchantId))
-                }
+                    appState.navController.navigate(AppDestination.merchantOverview(merchantId))
+                },
+                onNavigateToSearch = { appState.navigateToTopLevelDestination(AppDestination.Search) }
             )
         }
         composable(AppDestination.Search.route) {
-            SearchScreen()
+            SearchRoute(
+                onNavigateToMerchant = { merchantId ->
+                    appState.navController.navigate(AppDestination.merchantOverview(merchantId))
+                }
+            )
         }
         composable(AppDestination.Orders.route) {
             OrdersScreen(
@@ -88,10 +94,21 @@ fun AppShellNavigation(
             )
         }
         composable(
-            route = AppDestination.MerchantDetails.route,
+            route = AppDestination.MerchantOverview.route,
+            arguments = listOf(navArgument("merchantId") { type = NavType.StringType })
+        ) {
+            MerchantOverviewRoute(
+                onNavigateBack = appState::navigateBack,
+                onNavigateToCatalog = { merchantId ->
+                    appState.navController.navigate(AppDestination.catalogPlaceholder(merchantId))
+                }
+            )
+        }
+        composable(
+            route = AppDestination.CatalogPlaceholder.route,
             arguments = listOf(navArgument("merchantId") { type = NavType.StringType })
         ) { entry ->
-            MerchantDetailsPlaceholderScreen(
+            CatalogPlaceholderScreen(
                 merchantId = entry.arguments?.getString("merchantId").orEmpty(),
                 onNavigateBack = appState::navigateBack
             )

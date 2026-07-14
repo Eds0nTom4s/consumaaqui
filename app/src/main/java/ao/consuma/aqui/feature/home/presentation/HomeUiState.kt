@@ -7,8 +7,9 @@ sealed interface HomeUiState {
         val location: LocationUiModel?,
         val categories: List<CategoryUiModel>,
         val selectedCategoryId: String?,
-        val nearbyMerchants: List<MerchantCardUiModel>,
-        val featuredMerchants: List<MerchantCardUiModel>,
+        val nearbyMerchants: List<MerchantCompactUiModel>,
+        val recommendedMerchants: List<MerchantCompactUiModel>,
+        val featuredMerchants: List<MerchantCompactUiModel>,
         val query: String,
         val isRefreshing: Boolean,
         val isOffline: Boolean

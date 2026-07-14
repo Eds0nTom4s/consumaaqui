@@ -61,19 +61,50 @@
     <string name="nav_unselected_description">%s não seleccionado</string>
 
     <!-- Home -->
-    <string name="home_title">Início</string>
-    <string name="home_welcome">Bem-vindo à CONSUMA Aqui</string>
-    <string name="home_location_placeholder">A sua localização será apresentada aqui.</string>
-    <string name="home_merchants_section_title">Comerciantes</string>
-    <string name="home_merchants_section_description">Comerciantes próximos serão apresentados futuramente.</string>
-    <string name="home_promotions_section_title">Promoções</string>
-    <string name="home_promotions_section_description">Promoções em destaque serão apresentadas futuramente.</string>
-
     <!-- Search -->
     <string name="search_title">Pesquisar</string>
-    <string name="search_empty_title">O que procura?</string>
-    <string name="search_empty_description">Pesquise por comerciantes, produtos ou categorias.</string>
-    <string name="search_query_preview">Query: %s</string>
+    <string name="search_field_label">Pesquisar comerciantes</string>
+    <string name="search_filter_all">Todos</string>
+    <string name="search_filter_open">Aberto agora</string>
+    <string name="search_filter_delivery">Entrega</string>
+    <string name="search_filter_pickup">Levantamento</string>
+    <string name="search_filter_service">Serviços</string>
+    <string name="search_order_title">Ordenar por</string>
+    <string name="search_order_nearest">Mais próximos</string>
+    <string name="search_order_rating">Melhor avaliados</string>
+    <string name="search_order_popular">Mais populares</string>
+    <string name="search_order_featured">Em destaque</string>
+    <string name="search_order_name">Nome</string>
+    <plurals name="search_results_count">
+        <item quantity="one">%d comerciante encontrado</item>
+        <item quantity="other">%d comerciantes encontrados</item>
+    </plurals>
+    <plurals name="search_exploration_count">
+        <item quantity="one">%d comerciante disponível para explorar</item>
+        <item quantity="other">%d comerciantes disponíveis para explorar</item>
+    </plurals>
+    <plurals name="search_active_filters">
+        <item quantity="one">%d filtro activo</item>
+        <item quantity="other">%d filtros activos</item>
+    </plurals>
+    <string name="search_filter_action">Filtrar (%d)</string>
+    <string name="search_sort_action_current">Ordenar: %s</string>
+    <string name="search_category_title">Categoria</string>
+    <string name="search_nearest_requires_location">Seleccione uma localização para ordenar por proximidade.</string>
+    <string name="search_refreshing">A actualizar comerciantes…</string>
+    <string name="search_explore_title">Explore comerciantes</string>
+    <string name="search_results_title">Resultados da pesquisa</string>
+    <string name="search_empty_query_description">Nenhum comerciante encontrado para esta pesquisa.</string>
+    <string name="search_empty_filters_description">Nenhum comerciante corresponde aos filtros seleccionados.</string>
+    <string name="search_clear_query">Limpar pesquisa</string>
+    <string name="search_offline_stale">Os dados apresentados podem estar desactualizados.</string>
+    <string name="search_no_results_title">Nenhum comerciante encontrado</string>
+    <string name="search_error_generic">Não foi possível pesquisar comerciantes. Tente novamente.</string>
+    <string name="search_error_offline">Sem ligação para efectuar a pesquisa.</string>
+    <string name="search_error_location">Seleccione uma localização para continuar.</string>
+    <string name="search_error_server">O serviço está temporariamente indisponível. Tente novamente.</string>
+    <string name="filter_selected">Seleccionado</string>
+    <string name="filter_not_selected">Não seleccionado</string>
 
     <!-- Orders -->
     <string name="orders_title">Pedidos</string>
@@ -152,7 +183,6 @@
     <string name="home_current_location">Localização actual</string>
     <string name="home_change_location">Alterar</string>
     <string name="home_no_location_title">Escolha uma localização</string>
-    <string name="home_no_location_description">Escolha uma localização para encontrar comerciantes próximos.</string>
     <string name="home_choose_location">Escolher localização</string>
     <string name="home_greeting">Descubra perto de si</string>
     <string name="home_refresh">Actualizar</string>
@@ -160,8 +190,9 @@
     <string name="home_search_placeholder">Pesquisar comerciantes ou categorias…</string>
     <string name="home_no_location_discovery">Escolha uma localização para ver opções próximas.</string>
     <string name="home_nearby_title">Comerciantes próximos</string>
-    <string name="home_discovery_title">Opções disponíveis</string>
     <string name="home_featured_title">Em destaque</string>
+    <string name="home_recommended_title">Recomendados para si</string>
+    <string name="home_view_all">Ver todos</string>
     <string name="home_empty_title">Nenhuma opção encontrada</string>
     <string name="home_empty_description">Tente limpar a pesquisa ou escolher outra categoria.</string>
     <string name="home_clear_filters">Limpar filtros</string>
@@ -173,14 +204,46 @@
     <string name="home_availability_opens_at">Abre às %s</string>
     <string name="home_availability_closed">Fechado</string>
     <string name="home_availability_unknown">Horário indisponível</string>
-    <string name="home_fulfillment_pickup">Recolha</string>
+    <string name="home_fulfillment_pickup">Levantamento</string>
     <string name="home_fulfillment_delivery">Entrega</string>
     <string name="home_fulfillment_dine_in">No local</string>
     <string name="home_fulfillment_service">Serviço</string>
-    <string name="home_merchant_image_placeholder">Imagem indisponível para %s</string>
-    <string name="home_merchant_placeholder_title">Comerciante</string>
-    <string name="home_merchant_placeholder_message">O perfil deste comerciante será implementado numa próxima fase.</string>
     <string name="home_merchant_placeholder_id">ID: %s</string>
+
+    <!-- Merchant overview -->
+    <string name="merchant_overview_title">Comerciante</string>
+    <string name="merchant_banner_description">Banner de %s</string>
+    <string name="merchant_logo_description">Logótipo de %s</string>
+    <string name="merchant_card_accessibility">%1$s, %2$s</string>
+    <string name="merchant_rating">Avaliação</string>
+    <string name="merchant_rating_value">%s</string>
+    <plurals name="merchant_rating_count">
+        <item quantity="one">%1$s (%2$d avaliação)</item>
+        <item quantity="other">%1$s (%2$d avaliações)</item>
+    </plurals>
+    <string name="merchant_distance_meters">%d m</string>
+    <string name="merchant_distance_kilometers">%s km</string>
+    <string name="merchant_preparation_minutes">%d min</string>
+    <string name="merchant_money_kwanza">%s Kz</string>
+    <string name="merchant_fulfillment">Modalidades</string>
+    <string name="merchant_contact">Contacto</string>
+    <string name="merchant_hours">Horário</string>
+    <string name="merchant_location">Localização</string>
+    <string name="merchant_promotion">Em destaque</string>
+    <string name="merchant_schedule_monday_saturday">Segunda a sábado · %1$s–%2$s</string>
+    <plurals name="merchant_schedule_summary">
+        <item quantity="one">%1$d dia por semana · %2$s–%3$s</item>
+        <item quantity="other">%1$d dias por semana · %2$s–%3$s</item>
+    </plurals>
+    <string name="merchant_view_catalog">Ver catálogo</string>
+    <string name="merchant_view_catalog_accessibility">Ver catálogo de %s</string>
+    <string name="merchant_catalog_unavailable">Catálogo indisponível</string>
+    <string name="merchant_not_found">Este comerciante não foi encontrado.</string>
+    <string name="merchant_error_generic">Não foi possível carregar o comerciante. Tente novamente.</string>
+    <string name="merchant_error_offline">Sem ligação e sem dados guardados para este comerciante.</string>
+    <string name="catalog_placeholder_title">Catálogo</string>
+    <string name="catalog_placeholder_message">O catálogo será implementado numa próxima fase.</string>
+    <string name="catalog_placeholder_invalid_id">ID do comerciante inválido.</string>
 
     <!-- More -->
     <string name="more_location">Localização</string>

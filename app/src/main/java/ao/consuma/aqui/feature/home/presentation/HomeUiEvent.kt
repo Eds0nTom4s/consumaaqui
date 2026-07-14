@@ -6,6 +6,7 @@ sealed interface HomeUiEvent {
     data class SearchChanged(val value: String) : HomeUiEvent
     data class CategorySelected(val categoryId: String?) : HomeUiEvent
     data class MerchantSelected(val merchantId: String) : HomeUiEvent
+    data object ViewAll : HomeUiEvent
     data object LocationSelected : HomeUiEvent
     data object Retry : HomeUiEvent
 }

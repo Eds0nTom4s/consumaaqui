@@ -13,6 +13,10 @@ object ConsumaSize {
     val buttonHeight = 48.dp
     val inputHeight = 56.dp
     val merchantImageHeight = 120.dp
+    val merchantCompactImageHeight = 88.dp
+    val merchantCompactCardWidth = 240.dp
+    val merchantOverviewBannerHeight = 180.dp
+    val feedbackMinHeight = 240.dp
     val iconXLarge = 96.dp
     val indicatorSelected = 24.dp
     val indicatorDefault = 8.dp
