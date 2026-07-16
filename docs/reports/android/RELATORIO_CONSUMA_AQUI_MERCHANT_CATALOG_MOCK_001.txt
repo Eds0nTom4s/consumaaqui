@@ -1,0 +1,554 @@
+RELATÓRIO TÉCNICO
+CONSUMA AQUI ANDROID — MERCHANT-CATALOG-MOCK-001
+Data da validação final: 2026-07-16
+
+1. RESUMO EXECUTIVO
+
+A fase substitui o Catalog Placeholder por um fluxo mock completo de catálogo e
+detalhe/configuração de produto. A implementação usa domínio Kotlin puro,
+CatalogRepository injectado, fixtures determinísticas, ViewModels com
+SavedStateHandle e UI Compose baseada em UiModels. Não existe carrinho, checkout,
+backend ou persistência de ConfiguredProduct. A auditoria corrigiu três desvios
+reais: refresh que permanecia visualmente activo depois de concluído, remoção de
+selecção em grupo opcional single-choice e um resource residual do placeholder.
+
+2. BRANCH
+
+android/merchant-catalog-mock-001
+
+3. COMMIT BASE
+
+fef970d691978e81f8b86ff869ba385db74a72ab
+
+É o commit documental final da fase Merchant Discovery. Não houve merge, rebase,
+squash, force push nem alteração da main.
+
+4. COMMIT FUNCIONAL
+
+bfef5aa98ba7207ecc4fda1396374ef046ca6066
+feat(android): implement merchant catalog mock flow
+
+O commit contém exclusivamente código, resources e testes funcionais Android.
+Este relatório não integra o commit funcional.
+
+5. ESTADO INICIAL E MÉTODO DE AUDITORIA
+
+O HEAD inicial estava no commit base e a implementação encontrava-se no
+worktree. Foram revistos ficheiros rastreados e ainda não rastreados, executados
+git status, diff stat/name-status/diff/check, pesquisa de artefactos, referências
+proibidas e a validação Gradle/ADB integral. Após cada correcção tardia, a
+validação foi reiniciada em ./gradlew clean.
+
+6. ESCOPO INCLUÍDO
+
+MoneyAmount em core/domain; ajuste de Discovery para reutilizar o tipo; domínio,
+requests, results, repository, mock, fixtures e módulo Hilt de Catalog; Catalog
+UI; Product Detail UI; opções; quantidade; observação; cálculo/validação;
+ConfiguredProduct efémero; navegação por IDs; resources; testes unitários e
+instrumentados; remoção do Catalog Placeholder.
+
+7. ESCOPO EXCLUÍDO
+
+CartRepository, CartScreen, carrinho funcional, Checkout, pagamento, pedido,
+backend, Retrofit, DTOs, endpoint real, Room, DataStore, cache persistente,
+persistência de ConfiguredProduct, sincronização, autenticação transaccional e
+fase 08.
+
+8. FLUXO FINAL
+
+Home/Search -> Merchant Overview -> Catalog -> Product Detail -> configurar
+opções/quantidade/observação -> Adicionar -> confirmação temporária por Snackbar
+-> regresso ao Catalog. Back preserva o Catalog e os critérios de pesquisa. A
+Bottom Navigation fica oculta em Overview, Catalog e Product Detail.
+
+9. ARQUITECTURA FINAL
+
+core/domain/model contém MoneyAmount. feature/catalog divide-se em domain/model,
+domain/request, domain/result, domain/repository, domain/service, data,
+data/modules e presentation. Catalog e Product Detail têm Contracts, Routes,
+Screens e ViewModels próprios. Mappers convertem domínio em UiModels; composables
+não conhecem fixtures nem repository concreto.
+
+10. MONEYAMOUNT
+
+MoneyAmount foi promovido de Discovery para core/domain/model e passou a ser
+partilhado. Armazena Long em unidade menor e código monetário de três letras
+maiúsculas; rejeita negativos, currency inválida e operações entre moedas;
+adição/multiplicação usam Math.addExact/Math.multiplyExact. Discovery preserva o
+mesmo conceito sem duplicação. A UI formata AOA como Kz; o domínio não localiza.
+
+11. MODELOS DE DOMÍNIO
+
+MerchantCatalog, CatalogCategory, CatalogProduct, ProductAvailability,
+ProductOptionGroup, ProductOption, SelectionRule, ProductConfiguration,
+ConfiguredProduct e ProductSearchContent. Validam IDs, ownership, categorias,
+moeda, compare-at price, ordenação, tempos, tags, defaults, limites e unicidade.
+Não dependem de Android, Compose, Resources, HTTP, DTO ou Retrofit.
+
+12. PRODUCTAVAILABILITY
+
+Estados distintos: Available, Unavailable, TemporarilyUnavailable, AvailableFrom
+com LocalTime, OutOfStock e Unknown. Apenas Available permite configuração e
+emissão de ConfiguredProduct; os restantes continuam consultáveis no detalhe e
+apresentam CTA desactivada.
+
+13. REQUESTS E PAGINAÇÃO
+
+CatalogRequest(merchantId, forceRefresh), ProductRequest(merchantId, productId,
+forceRefresh) e CatalogSearchRequest(merchantId, query, categoryId,
+onlyAvailable, page, pageSize, forceRefresh). Page normaliza para >=1 e pageSize
+para 1..100. ProductSearchContent expõe page, pageSize, totalCount e hasMore.
+
+14. RESULTS E ERROS
+
+CatalogResult define Success, Offline, Empty e Error. CatalogDataSource define
+MEMORY, REMOTE e CACHE. CatalogError distingue MerchantNotFound,
+CatalogNotFound, ProductNotFound, CatalogUnavailable, ProductUnavailable,
+NetworkUnavailable, Unauthorized, Server, InvalidConfiguration e Unknown. Não
+há status HTTP no domínio.
+
+15. CATALOGREPOSITORY
+
+Contrato final:
+
+suspend fun getCatalog(request: CatalogRequest): CatalogResult<MerchantCatalog>
+suspend fun getProduct(request: ProductRequest): CatalogResult<CatalogProduct>
+suspend fun searchProducts(request: CatalogSearchRequest):
+    CatalogResult<ProductSearchContent>
+
+A UI depende apenas desta interface e o binding Hilt aponta para a implementação
+in-memory.
+
+16. DECISÃO SOBRE SEARCHPRODUCTS
+
+searchProducts foi mantido. Embora o mock já possua products no snapshot do
+catálogo, produção pode paginar, pesquisar e filtrar num endpoint independente,
+sem descarregar todo o catálogo. A separação evita codificar pesquisa no
+ViewModel/composable e permite remote/cache sem mudar apresentação. O custo é
+uma segunda consulta lógica após getCatalog; aceita-se por preparar paginação e
+fonte remota. Se a API futura garantir snapshot pequeno e completo, o contrato
+pode ser simplificado após medição, não antecipadamente.
+
+17. INMEMORYCATALOGREPOSITORY
+
+Implementação determinística, sem delay artificial, Context ou Compose. Pesquisa
+normaliza acentos/case, considera nome, descrições, categoria e tags, combina
+query/categoria/disponibilidade, ordena com desempates estáveis e pagina sem
+expor listas mutáveis globais. IDs de merchant e product devem coincidir.
+
+18. FIXTURES E COERÊNCIA COM DISCOVERY
+
+Os merchants de Catalog coincidem exactamente com os oito merchants de
+Discovery. A disponibilidade de catálogo é coerente com Merchant Overview.
+URLs demonstrativas usam .invalid, IDs são estáveis, nomes não representam
+parceiros reais, e ownership/moeda/categoria são verificados por testes.
+
+19. QUANTIDADE DE CATÁLOGOS
+
+7 catálogos publicados em fixtures. Um deles, Fonte Fresca, está publicado sem
+produtos; Serviços Viana é merchant conhecido com catálogo indisponível e não
+possui MerchantCatalog publicado.
+
+20. CATEGORIAS
+
+21 categorias no total. Quatro catálogos completos têm quatro categorias e pelo
+menos três produtos por categoria; os restantes cobrem taxonomias simplificadas
+e catálogo vazio. Existe categoria indisponível em Mercado Talatona para testar
+selecção e filtragem seguras.
+
+21. PRODUTOS
+
+56 produtos no total. Há produtos disponíveis, temporariamente indisponíveis,
+esgotados, indisponíveis, com AvailableFrom e Unknown; com/sem imagem,
+compare-at price, descrições, preparação, tags, opções e destaque. Todos usam AOA
+e pertencem ao merchant e categoria declarados.
+
+22. CENÁRIOS MOCK
+
+6 cenários controláveis: CONTENT, EMPTY, ERROR, OFFLINE, CATALOG_NOT_FOUND e
+PRODUCT_NOT_FOUND. CatalogUnavailable é derivado do merchant conhecido sem
+catálogo; MerchantNotFound resulta de ID desconhecido. O controlo é internal e
+não é exposto à apresentação runtime.
+
+23. CATALOG UI
+
+Estados Loading, Content, Empty por catálogo/categoria/pesquisa/indisponibilidade,
+Error, CatalogNotFound e InvalidMerchant. Exibe título/descrição, aviso offline,
+pesquisa, categorias horizontais, contexto de resultados, cards com preço,
+disponibilidade, preparação, destaque/opções, refresh e retry. LazyColumn/LazyRow
+usam keys estáveis e a Bottom Navigation permanece oculta.
+
+24. CATALOGVIEWMODEL
+
+Carrega por merchantId, normaliza categoria restaurada, delega pesquisa ao
+repository, diferencia empty/not-found/unavailable/offline/error, cancela jobs
+anteriores e emite navegação somente com merchantId/productId. Refresh envia
+forceRefresh a getCatalog e searchProducts. A auditoria corrigiu o estado final
+para isRefreshing=false depois da resposta, preservando apenas o estado
+transitório durante a operação.
+
+25. SAVEDSTATEHANDLE DO CATALOG
+
+Persistem catalog_query e catalog_category_id; merchantId vem do argumento de
+navegação. Query e categoria sobrevivem a rotação/recriação, categorias
+inexistentes ou indisponíveis são descartadas, e o regresso de Product Detail
+mantém os critérios do Catalog.
+
+26. PRODUCT DETAIL UI
+
+Estados Loading, Content, Unavailable, Error, NotFound e InvalidArguments.
+Apresenta imagem/placeholder, nome, preço, compare-at, disponibilidade,
+descrição, preparação, grupos/opções, quantidade, observação, erros de validação,
+resumo de preço e aviso de estimativa. Produto indisponível é consultável, mas a
+CTA Adicionar fica desactivada.
+
+27. PRODUCTDETAILVIEWMODEL
+
+Carrega exclusivamente por merchantId/productId, confirma ownership, inicializa
+defaults, restaura configuração sanitizada, aplica toggles/limites, recalcula
+preço, valida antes de emitir e bloqueia duplo Add até a configuração mudar.
+Nunca acede a Cart, Checkout, armazenamento ou backend.
+
+28. OPÇÕES E REGRAS DE SELECÇÃO
+
+SelectionRule suporta mínimo/máximo, required e singleChoice. Defaults precisam
+estar disponíveis e respeitar máximos. Validator detecta grupo/opção desconhecida,
+opção indisponível, mínimo, máximo e grupo obrigatório sem opções disponíveis.
+Single-choice obrigatório não pode ser removido; optional single-choice pode ser
+limpo, desvio corrigido e coberto por regressão.
+
+29. QUANTIDADE
+
+Intervalo 1..99, imposto no domínio, UI e restauração. Botões ficam desactivados
+nos limites e valores SavedState inválidos são normalizados. O total multiplica o
+preço unitário completo com overflow explícito.
+
+30. OBSERVAÇÃO
+
+Texto livre até 250 caracteres, persistido apenas no SavedStateHandle da tela.
+Input maior é truncado; espaços internos são preservados; ao configurar, trim
+externo é aplicado e texto em branco torna-se null. Não é enviado nem guardado
+fora do fluxo efémero.
+
+31. PRODUCTPRICECALCULATOR
+
+Soma base e opções em minor units, valida moeda, limita quantidade e captura
+overflow. Retorna breakdown com unitPrice, optionsPrice, totalUnitPrice e
+totalPrice. É estimativa client-side; a futura API continua autoridade financeira.
+
+32. PRODUCTCONFIGURATIONVALIDATOR
+
+Valida productId, disponibilidade, grupos/opções, limites, moeda, quantidade e
+overflow antes de construir ConfiguredProduct. Erros são um Set ordenado de modo
+determinístico e mapeados para mensagens de UI globais ou por grupo.
+
+33. CONFIGUREDPRODUCT
+
+Representa intenção validada, não CartItem nem OrderLine. Contém merchantId,
+productId, quantity, selectedOptionIds, note e breakdown estimado. Só nasce após
+validação integral, é entregue por callback e não é serializado, guardado em
+SavedStateHandle, repository, singleton, Room, DataStore ou ficheiro.
+
+34. CONFIRMAÇÃO TEMPORÁRIA
+
+Adicionar válido emite uma única vez, navega de volta ao Catalog e mostra
+Snackbar: “Produto configurado. O carrinho será ligado na próxima fase.” A
+mensagem comunica a fronteira sem criar carrinho. Não há retenção do objecto após
+o callback.
+
+35. NAVEGAÇÃO
+
+Rotas:
+
+merchant/{merchantId}
+merchant/{merchantId}/catalog
+merchant/{merchantId}/catalog/product/{productId}
+
+AppDestination valida IDs não vazios e usa Uri.encode separadamente. A navegação
+passa apenas IDs, launchSingleTop é aplicado ao detalhe e Back retorna sem criar
+AppShell paralelo. IDs com slash, espaço, ?, # e caracteres acentuados foram
+testados.
+
+36. SAVEDSTATEHANDLE DO PRODUCT DETAIL
+
+Persistem product_selections, product_quantity, product_note e
+product_validation_attempted; merchantId/productId são argumentos. Restauro
+descarta grupos/opções desconhecidos ou indisponíveis, elimina duplicados,
+respeita máximo e normaliza quantidade/nota. ConfiguredProduct não é persistido.
+
+37. UIMODELS E MAPPERS
+
+CatalogUiMapper converte catálogo, categorias, cards, detalhe, disponibilidade,
+moeda, grupos, breakdown e erros. CatalogUiText suporta resource, plural, joined
+e dynamic. Domínio não contém strings localizadas e composables não recebem
+CatalogProduct/MerchantCatalog directamente.
+
+38. ACESSIBILIDADE
+
+Cards anunciam nome/preço/categoria/status, chips anunciam selecção, grupos
+obrigatórios/opcionais e erros têm semântica, quantidade tem descrição, imagens
+informativas têm contentDescription e placeholders decorativos não duplicam
+leitura. Testes cobrem tema escuro e font scale grande; lint não introduziu
+warning de acessibilidade.
+
+39. PERFORMANCE E CONCORRÊNCIA
+
+Listas usam LazyColumn/LazyRow e keys por ID. Repository executa no dispatcher
+injectado; ViewModels cancelam o job anterior em nova carga/pesquisa. Não há rede,
+bitmap real, delay, polling ou trabalho bloqueante no main thread. pageSize é
+limitado a 100.
+
+40. PREVIEWS
+
+Há previews para Catalog loading/content/categoria/pesquisa/empty/error/offline/
+dark e cards disponíveis/indisponíveis/desconto/sem imagem/opções/destaque. Product
+Detail cobre loading/simple/grupos/unavailable/invalid/offline/dark/font 1.5.
+Previews usam UiModels locais, não repository nem fixtures runtime.
+
+41. DEPENDÊNCIAS, SDK E IDENTIDADE
+
+Nenhuma dependência foi adicionada. app/build.gradle.kts, libs.versions.toml e
+AndroidManifest não mudaram. namespace/applicationId continuam ao.consuma.aqui;
+compileSdk/targetSdk 36; minSdk 26; Java/JVM 17; versionCode 1; versionName 1.0.
+
+42. TESTES UNITÁRIOS POR VARIANTE
+
+Execução final após clean:
+
+- Debug: 218 total, 218 pass, 0 failures, 0 errors, 0 skipped; Gradle 53s.
+- Staging: 218 total, 218 pass, 0 failures, 0 errors, 0 skipped; Gradle 1m06s.
+- Release: 218 total, 218 pass, 0 failures, 0 errors, 0 skipped; Gradle 28s.
+
+Cobrem MoneyAmount, modelos, fixtures, repository, pesquisa/paginação, cálculo,
+validator, mappers, ViewModels, SavedState, refresh, opções e navegação.
+
+43. TESTES INSTRUMENTADOS
+
+./gradlew connectedDebugAndroidTest: PASS. XML canónico: 81 testes iniciados,
+80 pass, 1 skip, 0 failures, 0 errors; duração XML 127,355s. O skip é o teste da
+política Release executado na variante Debug. A consola “Finished 82 tests” inclui
+o harness; o XML é a fonte canónica. Gradle total: 4m10s.
+
+44. DISPOSITIVO E PLATAFORMA
+
+Samsung SM-S928U1, serial R5CX12XNNJX, Android 16, API 36, ligado por USB. Testes
+de Catalog e Product Detail executaram estados, interacções, opções, quantidade,
+observação, dark theme, font scale, navegação, rotação e confirmação temporária.
+
+45. BUILDS
+
+Após a última correcção e novo clean:
+
+- ./gradlew assembleDebug: PASS, 26s.
+- ./gradlew assembleStaging: PASS, 12s.
+- ./gradlew assembleRelease: PASS, 1m04s.
+
+APKs e outputs permanecem ignorados e nenhum artefacto gerado foi versionado.
+
+46. LINT
+
+./gradlew lintDebug: PASS em 2m04s. Resultado final: 0 errors e 34 warnings. O
+resource morto desta fase foi removido; o total regressou exactamente ao baseline
+da fase anterior.
+
+47. CLASSIFICAÇÃO DOS WARNINGS
+
+Introduzidos nesta fase: 0 finais.
+
+Herdados: 34:
+
+- 2 AndroidGradlePluginVersion;
+- 9 GradleDependency;
+- 7 NewerVersionAvailable;
+- 14 UnusedResources (7 cores e 7 strings da fundação);
+- 1 RedundantLabel no manifesto;
+- 1 ModifierParameter em ConsumaFeedback.
+
+Informativos: 18 avisos de versões. Relevantes fora do escopo: 14 resources
+antigos, RedundantLabel e ModifierParameter, risco baixo e sem regressão.
+Supressões novas: nenhuma. Falsos positivos confirmados: nenhum.
+
+48. AVISOS DE BUILD
+
+Javac informa que código Hilt gerado usa API deprecated; pertence a generated/ e
+não ao source da fase. Packaging informa que libandroidx.graphics.path.so não foi
+stripped e foi incluída sem alteração nas três variantes. Ambos são avisos
+herdados/toolchain, não impedem APK, testes ou lint e não justificam mudança de
+dependência nesta fase.
+
+49. VALIDAÇÃO MANUAL/DE APRESENTAÇÃO
+
+PASS assistido pela suite conectada no dispositivo real: Overview abre Catalog;
+Catalog pesquisa “muamba”, preserva query, abre produto; Product Detail altera
+quantidade, sobrevive a recreation, configura e regressa com Snackbar; Back volta
+a Overview/Home; Bottom Navigation só reaparece em top-level. Estados de Catalog
+e Product Detail, acessibilidade, dark e large font foram exercitados por testes
+Compose no mesmo dispositivo.
+
+50. LOGCAT
+
+Após a suite, o Logcat foi filtrado por FATAL EXCEPTION, processo
+ao.consuma.aqui, crash e ANR. Nenhuma ocorrência da aplicação foi encontrada.
+Mensagens de sistema, Samsung, AndroidX Test e warnings de hidden API do harness
+não indicam falha da app.
+
+51. AUDITORIA DO DIFF E ARTEFACTOS
+
+git status/diff --stat/diff --name-status/diff/diff --check foram executados.
+git diff --check terminou sem saída. git ls-files com .kotlin/.gradle/build não
+retornou ficheiros. Nenhum APK/AAB/output, snapshot externo ou artefacto gerado
+integra o commit. app/build.gradle.kts, libs.versions.toml e manifesto não mudaram.
+
+52. CÓDIGO MORTO, PLACEHOLDERS E REGRESSÕES
+
+CatalogPlaceholderScreen, tag CATALOG_PLACEHOLDER, rota CatalogPlaceholder e
+strings catalog_placeholder_* foram removidos. O resource residual
+home_merchant_placeholder_id, tornado morto pela remoção, também foi eliminado.
+Não há referência residual ao placeholder de catálogo. Placeholders visuais de
+imagem e telas institucionais herdadas fora de Catalog não são código morto.
+Cobertura anterior permanece e foi ampliada.
+
+53. FICHEIROS E ALTERAÇÕES
+
+Commit funcional: 61 ficheiros, 4.634 inserções e 122 remoções. Criados core
+MoneyAmount, feature/catalog completa, 9 suites unitárias/fixtures e 2 suites
+instrumentadas. Alterados navegação, app state, Discovery imports/modelo,
+resources e testes de regressão. Removido CatalogPlaceholderScreen. Nenhuma
+documentação está no commit funcional.
+
+54. RISCOS
+
+- Payload/API pode divergir de modelos, paginação e taxonomia mock.
+- Disponibilidade, preço e opções podem mudar entre leitura e futura operação.
+- Backend pode usar cursor e pesquisa com semântica distinta.
+- Configuração local não reserva stock nem garante preço.
+- Cache/offline futuro exigirá freshness e reconciliação.
+- Cart futuro precisará regra de merchant único, merge e revalidação.
+
+Mitigação: DTO mappers isolados, testes de contrato, autoridade financeira no
+servidor, versionamento, idempotência, freshness explícita e fronteiras abaixo.
+
+55. PENDÊNCIAS
+
+Nenhuma pendência funcional desta fase. Fora do escopo: contrato backend
+aprovado, API/DTOs, RemoteCatalogRepository, cache, imagens reais, telemetria,
+CartRepository/CartScreen, política de carrinho, checkout e persistência. Não
+iniciar fase 08 a partir desta entrega.
+
+56. ANÁLISE ARQUITECTURAL
+
+Decisões: Catalog é feature própria porque produtos/opções/preço possuem ciclo e
+regras diferentes de Discovery; MoneyAmount sobe para core por ser conceito
+partilhado; CatalogRepository separa domínio de fonte; Catalog e Product Detail
+mantêm ViewModels/UiStates independentes; navegação transporta IDs; cálculo local
+é estimativa; ConfiguredProduct é uma fronteira efémera para a futura fase.
+
+Alternativas rejeitadas: manter catálogo em Discovery (acoplamento de agregados),
+passar MerchantCatalog/CatalogProduct na rota (estado grande/obsoleto), filtrar no
+composable (regra na UI), criar Retrofit/DTO sem contrato (especulação), criar
+CartRepository antecipado (quebra de escopo), persistir ConfiguredProduct
+(semântica transaccional não aprovada).
+
+Dívida consciente: searchProducts causa segunda consulta lógica; imagens ainda
+são placeholders; UI consome página até 100; confirmação termina em Snackbar;
+warnings herdados permanecem. Estes custos são explícitos e menores que criar
+contratos prematuros.
+
+57. PLANO DE TRANSIÇÃO MOCK → API
+
+MANTER: modelos de domínio sujeitos a validação, requests/results/errors,
+CatalogRepository, services, ViewModels, UiStates/UiEvents, mappers UI,
+composables, navegação por ID e testes de apresentação.
+
+SUBSTITUIR: binding runtime de InMemoryCatalogRepository e CatalogFixtures como
+fonte de produção.
+
+ADICIONAR: CatalogApi, DTOs versionados, DTO/domain mappers, remote/cache data
+sources, error mapper, freshness/conectividade, paginação real, imagem remota e
+testes de contrato.
+
+Sequência: aprovar OpenAPI -> criar DTO/API em data -> mapear para domínio ->
+testar contrato -> implementar remote/cache -> trocar binding Hilt -> manter mock
+para testes/dev -> validar offline/paginação/preço sem alterar presentation.
+
+58. MATRIZ MOCK → API
+
+COMPONENTE | ACTUAL | FUTURO | MANTÉM | SUBSTITUI | RISCO
+CatalogRepository | interface domínio | mesma interface | sim | não | baixo
+InMemoryCatalogRepository | runtime mock | teste/dev | parcial | runtime | baixo
+CatalogFixtures | runtime/teste | teste/preview | parcial | runtime | baixo
+RemoteCatalogRepository | inexistente | implementação data | n/a | mock | médio
+CatalogApi/DTOs | inexistentes | contrato versionado | n/a | n/a | alto
+getCatalog | memória | remote/cache | sim | fonte | médio
+getProduct | memória | remote/cache | sim | fonte | médio
+searchProducts | filtro/página local | endpoint paginado | sim | execução | médio
+ViewModels/UI | contrato/UiModels | igual | sim | não | baixo
+PriceCalculator | estimativa local | estimativa + servidor | sim | autoridade | alto
+Errors/Results | explícitos | mapper HTTP/rede | sim | origem | médio
+SavedStateHandle | estado de tela | igual | sim | não | baixo
+Testes | mock/unit/UI | + contract/API/cache | sim | não | médio
+
+59. PROPOSTA DE API FUTURA
+
+Proposta sujeita a auditoria do backend; não declara endpoints existentes:
+
+GET /public/merchants/{merchantId}/catalog
+GET /public/merchants/{merchantId}/catalog/products
+GET /public/merchants/{merchantId}/catalog/products/{productId}
+POST /public/merchants/{merchantId}/catalog/products/{productId}/quote
+
+Parâmetros de listagem: query, categoryId, available, page/size ou cursor/limit,
+locale e catalogVersion. Respostas devem incluir currency, version/updatedAt,
+availability, option rules e identificadores estáveis. Quote futuro recebe
+productId, selections, quantity, note e versão conhecida; servidor recalcula e
+devolve preço/validade. DTOs nunca atravessam data.
+
+60. TRANSIÇÃO CATALOG → CART
+
+PLANO DE TRANSIÇÃO CATALOG → CART
+
+Plano: aprovar regras de merchant único/múltiplo -> definir CartRepository e
+CartLine em domínio Cart separado -> receber ConfiguredProduct por caso de uso ->
+reconsultar/quotar no servidor -> tratar conflito de merchant, indisponibilidade,
+preço e versão -> persistir somente após contrato aprovado -> substituir Snackbar
+por feedback/cart badge -> adicionar CartScreen -> testar rotação, processo,
+offline, merge, remoção e concorrência. Catalog não passa a conhecer CartScreen.
+
+MATRIZ CATALOG → CART
+
+COMPONENTE | CATALOG ACTUAL | CART FUTURO | ACÇÃO | RISCO
+ConfiguredProduct | intenção efémera | input de AddToCart | manter como boundary | médio
+ProductConfiguration | estado de tela | não persistir directamente | manter | baixo
+ProductPriceCalculator | estimativa | preview | manter sem autoridade | alto
+ProductConfigurationValidator | validação local | pré-validação | manter | médio
+CatalogRepository | leitura pública | continua leitura | não expandir | baixo
+CartRepository | inexistente | domínio Cart | adicionar separado | alto
+CartLine | inexistente | snapshot validado | adicionar | alto
+ProductDetailViewModel | emite callback | chama use case/efeito | adaptar | médio
+CatalogScreen | lista | badge/entrada opcional | adaptar depois | baixo
+CartScreen | inexistente | feature própria | adicionar depois | alto
+Persistência | nenhuma | política aprovada | adicionar em Cart | alto
+Checkout | inexistente | fase posterior | não acoplar a Catalog | alto
+
+61. FRONTEIRAS QUE NÃO DEVEM SER QUEBRADAS E CONCLUSÃO DE CONFORMIDADE
+
+- UI não conhece InMemoryCatalogRepository, Retrofit, DTO ou fixture.
+- Domínio não conhece Android, Compose, Resources ou códigos HTTP.
+- Navegação passa somente merchantId/productId.
+- Discovery não absorve domínio Catalog; Catalog não absorve Cart.
+- CatalogRepository permanece leitura de catálogo, não carrinho.
+- searchProducts não é implementado no composable.
+- SavedStateHandle guarda apenas estado de tela, nunca ConfiguredProduct.
+- ConfiguredProduct não é CartItem, OrderLine nem autoridade financeira.
+- ProductPriceCalculator é estimativa; servidor futuro recalcula.
+- CartRepository, CartScreen e Checkout não entram nesta fase.
+- Backend/DTO/cache ficam na camada data futura.
+- Fixtures não constituem contrato de API.
+
+Conclusão: auditoria integral PASS. Não existem CartRepository, CartScreen,
+Checkout, backend ou persistência de ConfiguredProduct. Não há artefacto gerado,
+snapshot externo, ficheiro morto ou placeholder residual de Catalog versionado.
+Todos os testes, builds, lint, ADB, instrumentados, Logcat e diff check exigidos
+foram executados com sucesso. A fase 08 não foi iniciada.
+
+FIM DO RELATÓRIO
