@@ -1,6 +1,7 @@
 package ao.consuma.aqui.feature.discovery.presentation.mapper
 
 import ao.consuma.aqui.R
+import ao.consuma.aqui.core.domain.model.MoneyAmount
 import ao.consuma.aqui.core.designsystem.components.ConsumaStatusSemantic
 import ao.consuma.aqui.feature.discovery.data.DiscoveryFixtures
 import ao.consuma.aqui.feature.discovery.domain.model.*

@@ -1,5 +1,6 @@
 package ao.consuma.aqui.feature.discovery.data
 
+import ao.consuma.aqui.core.domain.model.MoneyAmount
 import ao.consuma.aqui.feature.discovery.domain.model.*
 import java.time.DayOfWeek
 import java.time.LocalTime

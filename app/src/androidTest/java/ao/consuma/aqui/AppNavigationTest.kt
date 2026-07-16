@@ -39,8 +39,10 @@ class AppNavigationTest {
     @Test
     fun splash_initialization_navigates_to_home() {
         composeTestRule.waitUntil(timeoutMillis = 10000) {
-            composeTestRule.onAllNodes(hasTestTag(NavigationTestTags.HOME))
-                .fetchSemanticsNodes().isNotEmpty()
+            runCatching {
+                composeTestRule.onAllNodes(hasTestTag(NavigationTestTags.HOME))
+                    .fetchSemanticsNodes().isNotEmpty()
+            }.getOrDefault(false)
         }
         composeTestRule.onNodeWithTag(NavigationTestTags.HOME).assertIsDisplayed()
     }
@@ -114,10 +116,12 @@ class AppNavigationTest {
 
     private fun waitForHome() {
         composeTestRule.waitUntil(timeoutMillis = 10000) {
-            composeTestRule.onAllNodes(hasTestTag(NavigationTestTags.HOME))
-                .fetchSemanticsNodes().isNotEmpty()
-                    && composeTestRule.onAllNodes(hasTestTag(NavigationTestTags.BOTTOM_NAVIGATION))
-                .fetchSemanticsNodes().isNotEmpty()
+            runCatching {
+                composeTestRule.onAllNodes(hasTestTag(NavigationTestTags.HOME))
+                    .fetchSemanticsNodes().isNotEmpty() &&
+                    composeTestRule.onAllNodes(hasTestTag(NavigationTestTags.BOTTOM_NAVIGATION))
+                        .fetchSemanticsNodes().isNotEmpty()
+            }.getOrDefault(false)
         }
     }
 

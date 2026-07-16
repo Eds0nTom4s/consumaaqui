@@ -97,25 +97,6 @@ class MerchantPresentationTest {
         composeTestRule.onNodeWithTag(NavigationTestTags.MERCHANT_VIEW_CATALOG).assertIsDisplayed()
     }
 
-    @Test fun catalog_placeholder_has_no_products_or_cart() {
-        composeTestRule.setContent {
-            ConsumaAquiTheme(darkTheme = true) { CatalogPlaceholderScreen("sabor-maianga", {}) }
-        }
-        waitForTag(NavigationTestTags.CATALOG_PLACEHOLDER)
-        composeTestRule.onNodeWithTag(NavigationTestTags.CATALOG_PLACEHOLDER).assertIsDisplayed()
-        composeTestRule.onNodeWithText("O catálogo será implementado numa próxima fase.").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Carrinho").assertDoesNotExist()
-        composeTestRule.onNodeWithText("Produto").assertDoesNotExist()
-    }
-
-    @Test fun catalog_placeholder_handles_invalid_id() {
-        composeTestRule.setContent {
-            ConsumaAquiTheme { CatalogPlaceholderScreen("", {}) }
-        }
-        waitForTag(NavigationTestTags.CATALOG_PLACEHOLDER)
-        composeTestRule.onNodeWithText("ID do comerciante inválido.").assertIsDisplayed()
-    }
-
     private fun overview() = MerchantOverviewUiModel(
         id = "sabor-maianga",
         name = "Sabor da Maianga",
@@ -135,11 +116,4 @@ class MerchantPresentationTest {
         catalogAvailable = true
     )
 
-    private fun waitForTag(tag: String) {
-        composeTestRule.waitUntil(5_000) {
-            runCatching {
-                composeTestRule.onAllNodes(hasTestTag(tag)).fetchSemanticsNodes().isNotEmpty()
-            }.getOrDefault(false)
-        }
-    }
 }

@@ -27,32 +27,53 @@ sealed class AppDestination(val route: String) {
     data object About : AppDestination("about")
     data object LocationSettings : AppDestination("location_settings")
     data object MerchantOverview : AppDestination("merchant/{merchantId}")
-    data object CatalogPlaceholder : AppDestination("merchant/{merchantId}/catalog")
+    data object Catalog : AppDestination("merchant/{merchantId}/catalog")
+    data object ProductDetail : AppDestination("merchant/{merchantId}/catalog/product/{productId}")
     data object DesignSystemCatalog : AppDestination("design_system_catalog")
 
     companion object {
-        val all: List<AppDestination> = listOf(
-            Splash,
-            Initialization,
-            Onboarding,
-            LocationSetupInitial,
-            LocationSetupEdit,
-            AppShell,
-            Home,
-            Search,
-            Orders,
-            More,
-            Settings,
-            Help,
-            About,
-            LocationSettings,
-            MerchantOverview,
-            CatalogPlaceholder,
-            DesignSystemCatalog
-        )
+        val all: List<AppDestination>
+            get() = listOf(
+                Splash,
+                Initialization,
+                Onboarding,
+                LocationSetupInitial,
+                LocationSetupEdit,
+                AppShell,
+                Home,
+                Search,
+                Orders,
+                More,
+                Settings,
+                Help,
+                About,
+                LocationSettings,
+                MerchantOverview,
+                Catalog,
+                ProductDetail,
+                DesignSystemCatalog
+            )
 
-        fun merchantOverview(merchantId: String): String = "merchant/${Uri.encode(merchantId)}"
-        fun catalogPlaceholder(merchantId: String): String = "merchant/${Uri.encode(merchantId)}/catalog"
+        fun merchantOverview(merchantId: String): String {
+            requireId(merchantId, "merchantId")
+            return "merchant/${Uri.encode(merchantId)}"
+        }
+
+        fun catalog(merchantId: String): String {
+            requireId(merchantId, "merchantId")
+            return "merchant/${Uri.encode(merchantId)}/catalog"
+        }
+
+        fun productDetail(merchantId: String, productId: String): String {
+            requireId(merchantId, "merchantId")
+            requireId(productId, "productId")
+            return "merchant/${Uri.encode(merchantId)}/catalog/product/${Uri.encode(productId)}"
+        }
+
+        private fun requireId(value: String, argumentName: String) {
+            require(value.isNotBlank()) { "$argumentName cannot be blank" }
+        }
+
     }
 }
 

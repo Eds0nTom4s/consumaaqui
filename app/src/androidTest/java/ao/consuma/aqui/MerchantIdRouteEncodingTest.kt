@@ -24,10 +24,23 @@ class MerchantIdRouteEncodingTest {
 
     @Test fun catalog_route_encodes_only_id_and_serializes_no_merchant_object() {
         val id = "merchant/maianga 01"
-        val route = AppDestination.catalogPlaceholder(id)
+        val route = AppDestination.catalog(id)
         val encoded = route.removePrefix("merchant/").removeSuffix("/catalog")
         assertEquals(id, Uri.decode(encoded))
         assertTrue(route.endsWith("/catalog"))
         assertFalse(route.contains("MerchantSummary"))
+    }
+
+    @Test fun product_route_encodes_merchant_and_product_ids_independently() {
+        val merchantId = "merchant/maianga 01"
+        val productId = "produto?especial#1/ação"
+        val route = AppDestination.productDetail(merchantId, productId)
+        val encodedMerchant = route.removePrefix("merchant/").substringBefore("/catalog/product/")
+        val encodedProduct = route.substringAfter("/catalog/product/")
+        assertEquals(merchantId, Uri.decode(encodedMerchant))
+        assertEquals(productId, Uri.decode(encodedProduct))
+        assertFalse(encodedMerchant.contains("/"))
+        assertFalse(encodedProduct.contains("?"))
+        assertFalse(encodedProduct.contains("#"))
     }
 }

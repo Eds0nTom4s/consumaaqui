@@ -51,12 +51,22 @@ class SearchStateRestorationTest {
         composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH).assertIsDisplayed()
 
         composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_FIELD).performTextInput("café")
+        waitForSearchQuery("café")
 
         composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAV_HOME).performClick()
         composeTestRule.onNodeWithTag(NavigationTestTags.HOME).assertIsDisplayed()
 
         composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAV_SEARCH).performClick()
         composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH).assertIsDisplayed()
-        composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_FIELD).assertTextContains("café")
+        waitForSearchQuery("café")
+    }
+
+    private fun waitForSearchQuery(query: String) {
+        composeTestRule.waitUntil(timeoutMillis = 10_000) {
+            runCatching {
+                composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_FIELD)
+                    .assertTextContains(query)
+            }.isSuccess
+        }
     }
 }

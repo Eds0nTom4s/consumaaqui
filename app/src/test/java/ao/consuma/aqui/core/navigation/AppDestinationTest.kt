@@ -1,6 +1,7 @@
 package ao.consuma.aqui.core.navigation
 
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -19,8 +20,21 @@ class AppDestinationTest {
         assertFalse(AppDestination.Settings.isTopLevel())
         assertFalse(AppDestination.Help.isTopLevel())
         assertFalse(AppDestination.About.isTopLevel())
+        assertFalse(AppDestination.Catalog.isTopLevel())
+        assertFalse(AppDestination.ProductDetail.isTopLevel())
         assertFalse(AppDestination.DesignSystemCatalog.isTopLevel())
     }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `catalog route rejects blank merchant id`() {
+        AppDestination.catalog("   ")
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `product route rejects blank product id`() {
+        AppDestination.productDetail("merchant", "")
+    }
+
 
     @Test
     fun `root and shell destinations are not top level`() {
@@ -46,9 +60,14 @@ class AppDestinationTest {
         assertEquals(4, topLevelDestinations.size)
     }
 
-    companion object {
-        private fun assertEquals(expected: Int, actual: Int) {
-            org.junit.Assert.assertEquals(expected, actual)
-        }
+    @Test
+    fun `catalog configuration introduces no cart or checkout destination`() {
+        assertTrue(AppDestination.all.none { destination ->
+            destination.route.contains("cart", ignoreCase = true) ||
+                destination.route.contains("checkout", ignoreCase = true)
+        })
+        assertFalse(AppDestination.Catalog.isTopLevel())
+        assertFalse(AppDestination.ProductDetail.isTopLevel())
     }
+
 }

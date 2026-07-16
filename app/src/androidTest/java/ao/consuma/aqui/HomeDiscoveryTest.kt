@@ -69,13 +69,13 @@ class HomeDiscoveryTest {
         composeTestRule.onNodeWithTag("${NavigationTestTags.HOME_MERCHANT}_sabor-maianga")
             .assertIsDisplayed()
     }
-    @Test fun merchant_opens_overview_catalog_placeholder_and_back_preserves_home() {
+    @Test fun merchant_opens_catalog_and_back_preserves_home() {
         waitForHome()
         composeTestRule.onAllNodes(hasTestTag("${NavigationTestTags.HOME_MERCHANT}_sabor-maianga"))[0].performClick()
         composeTestRule.onNodeWithTag(NavigationTestTags.MERCHANT_OVERVIEW).assertIsDisplayed()
         composeTestRule.onNodeWithText("Sabor da Maianga").assertIsDisplayed()
         composeTestRule.onNodeWithTag(NavigationTestTags.MERCHANT_VIEW_CATALOG).performClick()
-        composeTestRule.onNodeWithTag(NavigationTestTags.CATALOG_PLACEHOLDER).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(NavigationTestTags.CATALOG).assertIsDisplayed()
         pressBack()
         composeTestRule.onNodeWithTag(NavigationTestTags.MERCHANT_OVERVIEW).assertIsDisplayed()
         pressBack()

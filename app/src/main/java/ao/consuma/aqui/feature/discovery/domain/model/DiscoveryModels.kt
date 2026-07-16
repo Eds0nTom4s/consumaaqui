@@ -1,9 +1,8 @@
 package ao.consuma.aqui.feature.discovery.domain.model
 
+import ao.consuma.aqui.core.domain.model.MoneyAmount
 import java.time.DayOfWeek
 import java.time.LocalTime
-
-data class MoneyAmount(val amountMinor: Long, val currencyCode: String)
 
 /** API-safe location snapshot. Deliberately independent from Android Location. */
 data class DiscoveryLocation(

@@ -1,9 +1,9 @@
 package ao.consuma.aqui.feature.home.presentation
 
 import ao.consuma.aqui.R
+import ao.consuma.aqui.core.domain.model.MoneyAmount
 import ao.consuma.aqui.feature.discovery.data.DiscoveryFixtures
 import ao.consuma.aqui.feature.discovery.domain.model.MerchantAvailability
-import ao.consuma.aqui.feature.discovery.domain.model.MoneyAmount
 import ao.consuma.aqui.feature.discovery.presentation.mapper.UiText
 import org.junit.Assert.*
 import org.junit.Test

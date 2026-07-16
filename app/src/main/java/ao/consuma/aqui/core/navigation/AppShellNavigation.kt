@@ -2,6 +2,7 @@ package ao.consuma.aqui.core.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -12,8 +13,10 @@ import ao.consuma.aqui.feature.about.AboutScreen
 import ao.consuma.aqui.feature.developer.DesignSystemCatalogScreen
 import ao.consuma.aqui.feature.help.HelpScreen
 import ao.consuma.aqui.feature.home.presentation.HomeRoute
-import ao.consuma.aqui.feature.discovery.presentation.merchant.CatalogPlaceholderScreen
 import ao.consuma.aqui.feature.discovery.presentation.merchant.MerchantOverviewRoute
+import ao.consuma.aqui.feature.catalog.presentation.catalog.CatalogRoute
+import ao.consuma.aqui.feature.catalog.presentation.product.ProductDetailRoute
+import ao.consuma.aqui.R
 import ao.consuma.aqui.feature.location.LocationSettingsScreen
 import ao.consuma.aqui.feature.location.LocationSetupMode
 import ao.consuma.aqui.feature.location.LocationSetupRoute
@@ -28,6 +31,7 @@ fun AppShellNavigation(
     isDesignSystemCatalogEnabled: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val configuredMessage = stringResource(R.string.product_configured_message)
     NavHost(
         navController = appState.navController,
         startDestination = AppDestination.Home.route,
@@ -100,17 +104,39 @@ fun AppShellNavigation(
             MerchantOverviewRoute(
                 onNavigateBack = appState::navigateBack,
                 onNavigateToCatalog = { merchantId ->
-                    appState.navController.navigate(AppDestination.catalogPlaceholder(merchantId))
+                    appState.navController.navigate(AppDestination.catalog(merchantId))
                 }
             )
         }
         composable(
-            route = AppDestination.CatalogPlaceholder.route,
+            route = AppDestination.Catalog.route,
             arguments = listOf(navArgument("merchantId") { type = NavType.StringType })
         ) { entry ->
-            CatalogPlaceholderScreen(
+            CatalogRoute(
                 merchantId = entry.arguments?.getString("merchantId").orEmpty(),
-                onNavigateBack = appState::navigateBack
+                onNavigateBack = appState::navigateBack,
+                onNavigateToProduct = { merchantId, productId ->
+                    appState.navController.navigate(AppDestination.productDetail(merchantId, productId)) {
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+        composable(
+            route = AppDestination.ProductDetail.route,
+            arguments = listOf(
+                navArgument("merchantId") { type = NavType.StringType },
+                navArgument("productId") { type = NavType.StringType }
+            )
+        ) { entry ->
+            ProductDetailRoute(
+                merchantId = entry.arguments?.getString("merchantId").orEmpty(),
+                productId = entry.arguments?.getString("productId").orEmpty(),
+                onNavigateBack = appState::navigateBack,
+                onProductConfigured = {
+                    appState.showSnackbar(configuredMessage)
+                    appState.navigateBack()
+                }
             )
         }
         if (isDesignSystemCatalogEnabled) {
