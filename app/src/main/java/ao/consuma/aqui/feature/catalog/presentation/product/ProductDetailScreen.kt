@@ -4,6 +4,7 @@ import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -20,7 +21,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import ao.consuma.aqui.R
 import ao.consuma.aqui.core.designsystem.components.ConsumaEmptyState
 import ao.consuma.aqui.core.designsystem.components.ConsumaErrorState
@@ -35,6 +35,7 @@ import ao.consuma.aqui.core.designsystem.components.ConsumaTopAppBar
 import ao.consuma.aqui.core.designsystem.theme.ConsumaAquiTheme
 import ao.consuma.aqui.core.designsystem.tokens.ConsumaSize
 import ao.consuma.aqui.core.designsystem.tokens.ConsumaSpacing
+import ao.consuma.aqui.core.designsystem.tokens.ConsumaElevation
 import ao.consuma.aqui.core.navigation.NavigationTestTags
 import ao.consuma.aqui.feature.catalog.domain.model.ProductConfiguration
 import ao.consuma.aqui.feature.catalog.presentation.components.ProductOptionGroupSection
@@ -46,38 +47,46 @@ import ao.consuma.aqui.feature.catalog.presentation.mapper.ProductOptionGroupUiM
 import ao.consuma.aqui.feature.catalog.presentation.mapper.ProductOptionUiModel
 import ao.consuma.aqui.feature.catalog.presentation.mapper.ProductPriceSummaryUiModel
 import ao.consuma.aqui.feature.catalog.presentation.mapper.resolve
+import ao.consuma.aqui.feature.cart.presentation.components.CartConflictDialog
 
 @Composable
 fun ProductDetailScreen(
     uiState: ProductDetailUiState,
     onNavigateBack: () -> Unit,
     onEvent: (ProductDetailUiEvent) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    cartAction: @Composable RowScope.() -> Unit = {}
 ) {
     val content = (uiState as? ProductDetailUiState.Content)?.data
     val unavailable = uiState as? ProductDetailUiState.Unavailable
     Scaffold(
         modifier = modifier.testTag(NavigationTestTags.PRODUCT_DETAIL),
-        topBar = { ConsumaTopAppBar(stringResource(R.string.product_detail_title), onBackClick = onNavigateBack) },
+        topBar = {
+            ConsumaTopAppBar(
+                stringResource(if (content?.mode == ProductDetailMode.EDIT) R.string.product_edit_title else R.string.product_detail_title),
+                onBackClick = onNavigateBack,
+                actions = cartAction
+            )
+        },
         bottomBar = {
             if (content != null) {
-                Surface(shadowElevation = 4.dp) {
+                Surface(shadowElevation = ConsumaElevation.medium) {
                     Column(Modifier.fillMaxWidth().padding(ConsumaSpacing.lg), verticalArrangement = Arrangement.spacedBy(ConsumaSpacing.sm)) {
                         Text(
                             stringResource(R.string.product_total_value, content.priceSummary.totalPriceText),
                             style = MaterialTheme.typography.titleMedium
                         )
                         ConsumaPrimaryButton(
-                            stringResource(R.string.product_add),
+                            stringResource(if (content.mode == ProductDetailMode.EDIT) R.string.product_save_changes else R.string.product_add),
                             { onEvent(ProductDetailUiEvent.Add) },
                             Modifier.testTag(NavigationTestTags.PRODUCT_ADD),
-                            enabled = content.canAdd,
+                            enabled = content.canAdd && !content.isSubmitting,
                             fullWidth = true
                         )
                     }
                 }
             } else if (unavailable != null) {
-                Surface(shadowElevation = 4.dp) {
+                Surface(shadowElevation = ConsumaElevation.medium) {
                     ConsumaPrimaryButton(
                         stringResource(R.string.product_add),
                         {},
@@ -117,6 +126,15 @@ fun ProductDetailScreen(
             )
             is ProductDetailUiState.Content -> ProductBody(uiState.data, onEvent, Modifier.padding(padding))
         }
+    }
+    content?.conflict?.let { conflict ->
+        CartConflictDialog(
+            currentMerchantName = conflict.currentMerchantName,
+            requestedMerchantName = conflict.requestedMerchantName,
+            processing = conflict.processing,
+            onKeep = { onEvent(ProductDetailUiEvent.KeepCurrentCart) },
+            onReplace = { onEvent(ProductDetailUiEvent.ReplaceCart) }
+        )
     }
 }
 
@@ -175,6 +193,12 @@ private fun ProductBody(
             }
         }
         item("summary") { ProductPriceSummary(data.priceSummary) }
+        if (data.configurationAdjusted) item("adjusted") {
+            Text(
+                stringResource(R.string.product_configuration_adjusted),
+                color = MaterialTheme.colorScheme.tertiary
+            )
+        }
     }
 }
 

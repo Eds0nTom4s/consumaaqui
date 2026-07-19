@@ -43,4 +43,15 @@ class MerchantIdRouteEncodingTest {
         assertFalse(encodedProduct.contains("?"))
         assertFalse(encodedProduct.contains("#"))
     }
+
+    @Test fun edit_product_route_encodes_optional_cart_item_id_independently() {
+        val itemId = "item/with?reserved#chars"
+        val route = AppDestination.productDetail("merchant", "product", itemId)
+        val encodedItem = route.substringAfter("?cartItemId=")
+        assertEquals(itemId, Uri.decode(encodedItem))
+        assertFalse(encodedItem.contains("/"))
+        assertFalse(encodedItem.contains("?"))
+        assertFalse(encodedItem.contains("#"))
+        assertFalse(AppDestination.productDetail("merchant", "product").contains("cartItemId"))
+    }
 }

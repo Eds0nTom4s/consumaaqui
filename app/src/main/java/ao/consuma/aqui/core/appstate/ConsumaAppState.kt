@@ -45,6 +45,7 @@ class ConsumaAppState(
             AppDestination.MerchantOverview.route,
             AppDestination.Catalog.route,
             AppDestination.ProductDetail.route,
+            AppDestination.Cart.route,
             AppDestination.Splash.route,
             AppDestination.Initialization.route,
             AppDestination.AppShell.route -> false

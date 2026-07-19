@@ -2,7 +2,6 @@ package ao.consuma.aqui.core.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -16,7 +15,7 @@ import ao.consuma.aqui.feature.home.presentation.HomeRoute
 import ao.consuma.aqui.feature.discovery.presentation.merchant.MerchantOverviewRoute
 import ao.consuma.aqui.feature.catalog.presentation.catalog.CatalogRoute
 import ao.consuma.aqui.feature.catalog.presentation.product.ProductDetailRoute
-import ao.consuma.aqui.R
+import ao.consuma.aqui.feature.cart.presentation.cart.CartRoute
 import ao.consuma.aqui.feature.location.LocationSettingsScreen
 import ao.consuma.aqui.feature.location.LocationSetupMode
 import ao.consuma.aqui.feature.location.LocationSetupRoute
@@ -31,7 +30,7 @@ fun AppShellNavigation(
     isDesignSystemCatalogEnabled: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val configuredMessage = stringResource(R.string.product_configured_message)
+    val navigateToCart = { appState.navController.navigate(AppDestination.Cart.route) { launchSingleTop = true } }
     NavHost(
         navController = appState.navController,
         startDestination = AppDestination.Home.route,
@@ -43,14 +42,16 @@ fun AppShellNavigation(
                 onNavigateToMerchant = { merchantId ->
                     appState.navController.navigate(AppDestination.merchantOverview(merchantId))
                 },
-                onNavigateToSearch = { appState.navigateToTopLevelDestination(AppDestination.Search) }
+                onNavigateToSearch = { appState.navigateToTopLevelDestination(AppDestination.Search) },
+                onNavigateToCart = navigateToCart
             )
         }
         composable(AppDestination.Search.route) {
             SearchRoute(
                 onNavigateToMerchant = { merchantId ->
                     appState.navController.navigate(AppDestination.merchantOverview(merchantId))
-                }
+                },
+                onNavigateToCart = navigateToCart
             )
         }
         composable(AppDestination.Orders.route) {
@@ -105,7 +106,8 @@ fun AppShellNavigation(
                 onNavigateBack = appState::navigateBack,
                 onNavigateToCatalog = { merchantId ->
                     appState.navController.navigate(AppDestination.catalog(merchantId))
-                }
+                },
+                onNavigateToCart = navigateToCart
             )
         }
         composable(
@@ -119,24 +121,48 @@ fun AppShellNavigation(
                     appState.navController.navigate(AppDestination.productDetail(merchantId, productId)) {
                         launchSingleTop = true
                     }
-                }
+                },
+                onNavigateToCart = navigateToCart
             )
         }
         composable(
             route = AppDestination.ProductDetail.route,
             arguments = listOf(
                 navArgument("merchantId") { type = NavType.StringType },
-                navArgument("productId") { type = NavType.StringType }
+                navArgument("productId") { type = NavType.StringType },
+                navArgument("cartItemId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
             )
         ) { entry ->
             ProductDetailRoute(
                 merchantId = entry.arguments?.getString("merchantId").orEmpty(),
                 productId = entry.arguments?.getString("productId").orEmpty(),
                 onNavigateBack = appState::navigateBack,
-                onProductConfigured = {
-                    appState.showSnackbar(configuredMessage)
-                    appState.navigateBack()
-                }
+                onCartResult = {},
+                onShowMessage = appState::showSnackbar,
+                onSuccess = appState::navigateBack,
+                onNavigateToCart = navigateToCart
+            )
+        }
+        composable(AppDestination.Cart.route) {
+            CartRoute(
+                onNavigateBack = appState::navigateBack,
+                onExploreMerchants = { appState.navigateToTopLevelDestination(AppDestination.Home) },
+                onContinueShopping = { merchantId ->
+                    appState.navController.navigate(AppDestination.catalog(merchantId)) {
+                        popUpTo(AppDestination.Cart.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                onEditItem = { merchantId, productId, cartItemId ->
+                    appState.navController.navigate(
+                        AppDestination.productDetail(merchantId, productId, cartItemId)
+                    ) { launchSingleTop = true }
+                },
+                onShowMessage = appState::showSnackbar
             )
         }
         if (isDesignSystemCatalogEnabled) {

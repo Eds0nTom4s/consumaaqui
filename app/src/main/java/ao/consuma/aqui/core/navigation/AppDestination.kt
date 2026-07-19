@@ -5,7 +5,6 @@ import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -28,7 +27,8 @@ sealed class AppDestination(val route: String) {
     data object LocationSettings : AppDestination("location_settings")
     data object MerchantOverview : AppDestination("merchant/{merchantId}")
     data object Catalog : AppDestination("merchant/{merchantId}/catalog")
-    data object ProductDetail : AppDestination("merchant/{merchantId}/catalog/product/{productId}")
+    data object ProductDetail : AppDestination("merchant/{merchantId}/catalog/product/{productId}?cartItemId={cartItemId}")
+    data object Cart : AppDestination("cart")
     data object DesignSystemCatalog : AppDestination("design_system_catalog")
 
     companion object {
@@ -51,6 +51,7 @@ sealed class AppDestination(val route: String) {
                 MerchantOverview,
                 Catalog,
                 ProductDetail,
+                Cart,
                 DesignSystemCatalog
             )
 
@@ -64,10 +65,16 @@ sealed class AppDestination(val route: String) {
             return "merchant/${Uri.encode(merchantId)}/catalog"
         }
 
-        fun productDetail(merchantId: String, productId: String): String {
+        fun productDetail(merchantId: String, productId: String, cartItemId: String? = null): String {
             requireId(merchantId, "merchantId")
             requireId(productId, "productId")
-            return "merchant/${Uri.encode(merchantId)}/catalog/product/${Uri.encode(productId)}"
+            return buildString {
+                append("merchant/${Uri.encode(merchantId)}/catalog/product/${Uri.encode(productId)}")
+                cartItemId?.let {
+                    requireId(it, "cartItemId")
+                    append("?cartItemId=${Uri.encode(it)}")
+                }
+            }
         }
 
         private fun requireId(value: String, argumentName: String) {

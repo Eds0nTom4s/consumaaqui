@@ -12,6 +12,7 @@ fun HomeRoute(
     onNavigateToLocationSettings: () -> Unit,
     onNavigateToMerchant: (String) -> Unit,
     onNavigateToSearch: () -> Unit,
+    onNavigateToCart: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -27,6 +28,9 @@ fun HomeRoute(
         onEvent = { event ->
             viewModel.onEvent(event, onNavigateToMerchant, onNavigateToLocationSettings, onNavigateToSearch)
         },
-        modifier = modifier
+        modifier = modifier,
+        cartAction = {
+            ao.consuma.aqui.feature.cart.presentation.components.CartActionRoute(onNavigateToCart)
+        }
     )
 }

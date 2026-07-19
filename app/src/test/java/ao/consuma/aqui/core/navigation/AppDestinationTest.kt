@@ -22,6 +22,7 @@ class AppDestinationTest {
         assertFalse(AppDestination.About.isTopLevel())
         assertFalse(AppDestination.Catalog.isTopLevel())
         assertFalse(AppDestination.ProductDetail.isTopLevel())
+        assertFalse(AppDestination.Cart.isTopLevel())
         assertFalse(AppDestination.DesignSystemCatalog.isTopLevel())
     }
 
@@ -61,13 +62,14 @@ class AppDestinationTest {
     }
 
     @Test
-    fun `catalog configuration introduces no cart or checkout destination`() {
+    fun `cart is secondary and checkout destination is absent`() {
         assertTrue(AppDestination.all.none { destination ->
-            destination.route.contains("cart", ignoreCase = true) ||
-                destination.route.contains("checkout", ignoreCase = true)
+            destination.route.contains("checkout", ignoreCase = true)
         })
+        assertTrue(AppDestination.Cart in AppDestination.all)
         assertFalse(AppDestination.Catalog.isTopLevel())
         assertFalse(AppDestination.ProductDetail.isTopLevel())
+        assertFalse(AppDestination.Cart.isTopLevel())
     }
 
 }

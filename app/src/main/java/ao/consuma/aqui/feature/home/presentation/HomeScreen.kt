@@ -28,7 +28,12 @@ import ao.consuma.aqui.feature.discovery.presentation.mapper.resolve
 import ao.consuma.aqui.feature.discovery.presentation.merchant.MerchantCompactCard
 
 @Composable
-fun HomeScreen(uiState: HomeUiState, onEvent: (HomeUiEvent) -> Unit, modifier: Modifier = Modifier) {
+fun HomeScreen(
+    uiState: HomeUiState,
+    onEvent: (HomeUiEvent) -> Unit,
+    modifier: Modifier = Modifier,
+    cartAction: @Composable RowScope.() -> Unit = {}
+) {
     Scaffold(
         modifier = modifier.testTag(NavigationTestTags.HOME),
         topBar = {
@@ -38,6 +43,7 @@ fun HomeScreen(uiState: HomeUiState, onEvent: (HomeUiEvent) -> Unit, modifier: M
                     IconButton(onClick = { onEvent(HomeUiEvent.Refresh) }, modifier = Modifier.testTag(NavigationTestTags.HOME_REFRESH)) {
                         Icon(Icons.Default.Refresh, stringResource(R.string.home_refresh))
                     }
+                    cartAction()
                 }
             )
         }

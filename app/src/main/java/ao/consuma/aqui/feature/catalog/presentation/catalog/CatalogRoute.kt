@@ -12,6 +12,7 @@ fun CatalogRoute(
     merchantId: String,
     onNavigateBack: () -> Unit,
     onNavigateToProduct: (String, String) -> Unit,
+    onNavigateToCart: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: CatalogViewModel = hiltViewModel()
 ) {
@@ -21,6 +22,9 @@ fun CatalogRoute(
         uiState = state,
         onNavigateBack = onNavigateBack,
         onEvent = { viewModel.onEvent(it, onNavigateToProduct) },
-        modifier = modifier
+        modifier = modifier,
+        cartAction = {
+            ao.consuma.aqui.feature.cart.presentation.components.CartActionRoute(onNavigateToCart)
+        }
     )
 }

@@ -273,6 +273,7 @@
     <string name="catalog_offline_notice">O catálogo pode estar desactualizado. A configuração local permanece disponível.</string>
 
     <string name="product_detail_title">Produto</string>
+    <string name="product_edit_title">Editar produto</string>
     <string name="product_available">Disponível</string>
     <string name="product_unavailable">Indisponível</string>
     <string name="product_temporarily_unavailable">Temporariamente indisponível</string>
@@ -300,11 +301,16 @@
     <string name="product_base_price">Preço base</string>
     <string name="product_options_price">Opções</string>
     <string name="product_estimated_total">Total estimado</string>
-    <string name="product_total_value">Total: %s</string>
+    <string name="product_total_value">Total estimado: %s</string>
     <string name="product_total_accessibility">Total estimado: %s</string>
     <string name="product_price_estimate_notice">O preço calculado no cliente é uma estimativa e não constitui autoridade financeira.</string>
     <string name="product_add">Adicionar</string>
-    <string name="product_configured_message">Produto configurado. O carrinho será ligado na próxima fase.</string>
+    <string name="product_save_changes">Guardar alterações</string>
+    <string name="product_added_message">Produto adicionado ao carrinho</string>
+    <string name="product_merged_message">Quantidade actualizada no carrinho</string>
+    <string name="product_replaced_cart_message">Carrinho substituído e produto adicionado.</string>
+    <string name="product_updated_message">Produto actualizado.</string>
+    <string name="product_configuration_adjusted">Algumas opções foram ajustadas ao catálogo actual.</string>
     <string name="product_offline_notice">Dados guardados. O preço é uma estimativa e nenhum pedido será enviado.</string>
     <string name="product_unavailable_configuration">Este produto pode ser consultado, mas não pode ser configurado actualmente.</string>
     <string name="product_not_found">Produto não encontrado</string>
@@ -328,6 +334,50 @@
     <string name="product_error_invalid_product">A configuração não pertence a este produto.</string>
     <string name="product_error_price">Não foi possível calcular o preço desta configuração.</string>
     <string name="product_error_quantity">A quantidade deve estar entre 1 e 99.</string>
+
+    <!-- Cart -->
+    <string name="cart_title">Carrinho</string>
+    <string name="cart_empty_title">O seu carrinho está vazio</string>
+    <string name="cart_empty_description">Adicione produtos de um comerciante para os encontrar aqui.</string>
+    <string name="cart_explore_merchants">Explorar comerciantes</string>
+    <string name="cart_continue_shopping">Continuar a comprar</string>
+    <string name="cart_single_merchant_notice">O carrinho aceita produtos de um único comerciante.</string>
+    <string name="cart_items">Itens</string>
+    <string name="cart_distinct_items">Produtos diferentes</string>
+    <string name="cart_estimated_subtotal">Subtotal estimado</string>
+    <string name="cart_estimate_label">O subtotal apresentado é uma estimativa.</string>
+    <string name="cart_price_notice">O preço e a disponibilidade serão confirmados antes da conclusão do pedido.</string>
+    <string name="cart_checkout_future">A finalização será implementada na próxima fase.</string>
+    <string name="cart_edit">Editar</string>
+    <string name="cart_remove">Remover</string>
+    <string name="cart_clear">Limpar carrinho</string>
+    <string name="cart_unit_price">Preço unitário: %s</string>
+    <string name="cart_note">Observação: %s</string>
+    <string name="cart_remove_dialog_title">Remover produto?</string>
+    <string name="cart_remove_dialog_message">Remover %s do carrinho?</string>
+    <string name="cart_keep_item">Manter produto</string>
+    <string name="cart_clear_dialog_title">Limpar carrinho?</string>
+    <string name="cart_clear_dialog_message">Todos os produtos serão removidos do carrinho.</string>
+    <string name="cart_keep_items">Manter produtos</string>
+    <string name="cart_conflict_title">Substituir carrinho?</string>
+    <string name="cart_conflict_message">O seu carrinho contém produtos de %1$s. Para adicionar produtos de %2$s, é necessário substituir o carrinho actual.</string>
+    <string name="cart_conflict_keep">Manter carrinho actual</string>
+    <string name="cart_conflict_replace">Substituir carrinho</string>
+    <string name="cart_badge_empty_accessibility">Carrinho vazio</string>
+    <string name="cart_badge_overflow_accessibility">Carrinho, mais de 99 itens</string>
+    <plurals name="cart_badge_accessibility">
+        <item quantity="one">Carrinho, %d item</item>
+        <item quantity="other">Carrinho, %d itens</item>
+    </plurals>
+    <string name="cart_item_accessibility">%1$s, quantidade %2$d, preço unitário %3$s, total da linha %4$s</string>
+    <string name="cart_error_item_not_found">Este produto já não está no carrinho.</string>
+    <string name="cart_error_invalid_quantity">Quantidade inválida.</string>
+    <string name="cart_error_quantity_limit">A quantidade máxima por produto é 99.</string>
+    <string name="cart_error_currency">Não foi possível combinar produtos com moedas diferentes.</string>
+    <string name="cart_error_invalid_item">Não foi possível actualizar este produto.</string>
+    <string name="cart_error_merchant">Este produto pertence a outro comerciante.</string>
+    <string name="cart_error_price">Não foi possível calcular o subtotal.</string>
+    <string name="cart_error_generic">Não foi possível actualizar o carrinho.</string>
 
     <!-- More -->
     <string name="more_location">Localização</string>

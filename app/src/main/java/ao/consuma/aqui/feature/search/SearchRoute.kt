@@ -8,6 +8,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun SearchRoute(
     onNavigateToMerchant: (String) -> Unit,
+    onNavigateToCart: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel = hiltViewModel()
 ) {
@@ -17,6 +18,9 @@ fun SearchRoute(
     SearchScreen(
         uiState = state,
         onEvent = { viewModel.onEvent(it, onNavigateToMerchant) },
-        modifier = modifier
+        modifier = modifier,
+        cartAction = {
+            ao.consuma.aqui.feature.cart.presentation.components.CartActionRoute(onNavigateToCart)
+        }
     )
 }

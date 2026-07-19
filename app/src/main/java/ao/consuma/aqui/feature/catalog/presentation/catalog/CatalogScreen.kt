@@ -4,6 +4,7 @@ import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -49,7 +50,8 @@ fun CatalogScreen(
     uiState: CatalogUiState,
     onNavigateBack: () -> Unit,
     onEvent: (CatalogUiEvent) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    cartAction: @Composable RowScope.() -> Unit = {}
 ) {
     Scaffold(
         modifier = modifier.testTag(NavigationTestTags.CATALOG),
@@ -61,6 +63,7 @@ fun CatalogScreen(
                     IconButton(onClick = { onEvent(CatalogUiEvent.Refresh) }) {
                         Icon(Icons.Default.Refresh, stringResource(R.string.catalog_refresh))
                     }
+                    cartAction()
                 }
             )
         }

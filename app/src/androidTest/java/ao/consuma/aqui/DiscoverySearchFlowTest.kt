@@ -126,13 +126,117 @@ class DiscoverySearchFlowTest {
         composeTestRule.onNodeWithTag(NavigationTestTags.PRODUCT_QUANTITY)
             .assertContentDescriptionContains("Quantidade seleccionada: 2")
         composeTestRule.onNodeWithTag(NavigationTestTags.PRODUCT_ADD).performClick()
-        composeTestRule.onNodeWithText("Produto configurado. O carrinho será ligado na próxima fase.")
+        composeTestRule.onNodeWithText("Produto adicionado ao carrinho")
             .assertIsDisplayed()
         composeTestRule.onNodeWithTag(NavigationTestTags.CATALOG_SEARCH).assertTextContains("muamba")
         pressBack()
         composeTestRule.onNodeWithTag(NavigationTestTags.MERCHANT_OVERVIEW).assertIsDisplayed()
         pressBack()
         composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_FIELD).assertTextContains("Sabor")
+    }
+
+    @Test fun cart_add_badge_rotation_edit_and_back_stack_preserve_repository_state() {
+        openSearch()
+        composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_FIELD).performTextInput("Sabor")
+        composeTestRule.onNodeWithTag("${NavigationTestTags.SEARCH_MERCHANT}_sabor-maianga").performClick()
+        composeTestRule.onNodeWithTag(NavigationTestTags.MERCHANT_VIEW_CATALOG).performClick()
+        composeTestRule.onNodeWithTag(NavigationTestTags.CATALOG_SEARCH).performTextInput("muamba")
+        composeTestRule.onNodeWithTag(NavigationTestTags.CATALOG_LIST).performScrollToNode(
+            hasTestTag("${NavigationTestTags.CATALOG_PRODUCT}_sabor-maianga-product-muamba-casa")
+        )
+        composeTestRule.onNodeWithTag(
+            "${NavigationTestTags.CATALOG_PRODUCT}_sabor-maianga-product-muamba-casa"
+        ).performClick()
+        composeTestRule.onNodeWithTag(NavigationTestTags.PRODUCT_ADD).performClick()
+        composeTestRule.onNodeWithText("Produto adicionado ao carrinho").assertIsDisplayed()
+        composeTestRule.onNodeWithTag(NavigationTestTags.CART_BADGE)
+            .assertContentDescriptionContains("Carrinho, 1 item")
+            .performClick()
+
+        composeTestRule.onNodeWithTag(NavigationTestTags.CART).assertIsDisplayed()
+        composeTestRule.onNodeWithText("Muamba da Casa").assertIsDisplayed()
+        composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION).assertDoesNotExist()
+        composeTestRule.onNodeWithTag(NavigationTestTags.CART_LIST).performScrollToNode(
+            hasTestTag(NavigationTestTags.CART_SUBTOTAL)
+        )
+        composeTestRule.onNodeWithTag(NavigationTestTags.CART_SUBTOTAL).assertIsDisplayed()
+
+        composeTestRule.activityRule.scenario.recreate()
+        composeTestRule.onNodeWithTag(NavigationTestTags.CART).assertIsDisplayed()
+        composeTestRule.onNodeWithText("Muamba da Casa").assertIsDisplayed()
+        composeTestRule.onNodeWithTag(NavigationTestTags.CART_ITEM_EDIT).performClick()
+        composeTestRule.onNodeWithText("Editar produto").assertIsDisplayed()
+        composeTestRule.onNodeWithTag(NavigationTestTags.PRODUCT_LIST).performScrollToNode(
+            hasTestTag(NavigationTestTags.PRODUCT_NOTE)
+        )
+        composeTestRule.onNodeWithTag(NavigationTestTags.PRODUCT_NOTE).performTextInput("sem talheres")
+        composeTestRule.onNodeWithContentDescription("Aumentar quantidade").performClick()
+        composeTestRule.onNodeWithTag(NavigationTestTags.PRODUCT_ADD).performClick()
+
+        composeTestRule.onNodeWithText("Produto actualizado.").assertIsDisplayed()
+        composeTestRule.onNodeWithTag(NavigationTestTags.CART).assertIsDisplayed()
+        composeTestRule.onNodeWithText("Observação: sem talheres").assertIsDisplayed()
+        composeTestRule.onNodeWithTag(NavigationTestTags.CART_ITEM_REMOVE).performClick()
+        composeTestRule.onNodeWithTag(NavigationTestTags.CART_REMOVE_DIALOG).assertIsDisplayed()
+        composeTestRule.onNodeWithText("Manter produto").performClick()
+        composeTestRule.onNodeWithText("Muamba da Casa").assertIsDisplayed()
+        composeTestRule.onNodeWithTag(NavigationTestTags.CART_ITEM_REMOVE).performClick()
+        composeTestRule.onNodeWithText("Remover").performClick()
+        composeTestRule.onNodeWithTag(NavigationTestTags.CART_EMPTY).assertIsDisplayed()
+        pressBack()
+        composeTestRule.onNodeWithTag(NavigationTestTags.CATALOG_SEARCH).assertTextContains("muamba")
+        composeTestRule.onNodeWithTag(NavigationTestTags.CART_BADGE)
+            .assertContentDescriptionContains("Carrinho vazio")
+    }
+
+    @Test fun merchant_conflict_keep_and_atomic_replace_are_explicit() {
+        openSearch()
+        composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_FIELD).performTextInput("Sabor")
+        composeTestRule.onNodeWithTag("${NavigationTestTags.SEARCH_MERCHANT}_sabor-maianga").performClick()
+        composeTestRule.onNodeWithTag(NavigationTestTags.MERCHANT_VIEW_CATALOG).performClick()
+        composeTestRule.onNodeWithTag(NavigationTestTags.CATALOG_SEARCH).performTextInput("muamba")
+        composeTestRule.onNodeWithTag(NavigationTestTags.CATALOG_LIST).performScrollToNode(
+            hasTestTag("${NavigationTestTags.CATALOG_PRODUCT}_sabor-maianga-product-muamba-casa")
+        )
+        composeTestRule.onNodeWithTag(
+            "${NavigationTestTags.CATALOG_PRODUCT}_sabor-maianga-product-muamba-casa"
+        ).performClick()
+        composeTestRule.onNodeWithTag(NavigationTestTags.PRODUCT_ADD).performClick()
+        pressBack()
+        pressBack()
+
+        composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_FIELD).performTextClearance()
+        composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_FIELD).performTextInput("Horizonte")
+        composeTestRule.onNodeWithTag("${NavigationTestTags.SEARCH_MERCHANT}_cafe-horizonte").performClick()
+        composeTestRule.onNodeWithTag(NavigationTestTags.MERCHANT_VIEW_CATALOG).performClick()
+        composeTestRule.onNodeWithTag(NavigationTestTags.CATALOG_SEARCH).performTextInput("Espresso")
+        composeTestRule.onNodeWithTag(NavigationTestTags.CATALOG_LIST).performScrollToNode(
+            hasTestTag("${NavigationTestTags.CATALOG_PRODUCT}_cafe-horizonte-product-espresso-horizonte")
+        )
+        composeTestRule.onNodeWithTag(
+            "${NavigationTestTags.CATALOG_PRODUCT}_cafe-horizonte-product-espresso-horizonte"
+        ).performClick()
+        composeTestRule.onNodeWithTag(NavigationTestTags.PRODUCT_ADD).performClick()
+        composeTestRule.onNodeWithTag(NavigationTestTags.CART_CONFLICT).assertIsDisplayed()
+        composeTestRule.onNodeWithText("Catálogo Sabor da Maianga", substring = true).assertExists()
+        composeTestRule.onNodeWithText("Menu Café Horizonte", substring = true).assertExists()
+        composeTestRule.activityRule.scenario.recreate()
+        composeTestRule.onNodeWithTag(NavigationTestTags.PRODUCT_DETAIL).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(NavigationTestTags.CART_CONFLICT).assertDoesNotExist()
+        composeTestRule.onNodeWithTag(NavigationTestTags.PRODUCT_ADD).performClick()
+        composeTestRule.onNodeWithTag(NavigationTestTags.CART_CONFLICT).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(NavigationTestTags.CART_CONFLICT_KEEP).performClick()
+        composeTestRule.onNodeWithTag(NavigationTestTags.CART_CONFLICT).assertDoesNotExist()
+        composeTestRule.onNodeWithTag(NavigationTestTags.PRODUCT_DETAIL).assertIsDisplayed()
+
+        composeTestRule.onNodeWithTag(NavigationTestTags.PRODUCT_ADD).performClick()
+        composeTestRule.onNodeWithTag(NavigationTestTags.CART_CONFLICT_REPLACE).performClick()
+        composeTestRule.onNodeWithText("Carrinho substituído e produto adicionado.").assertIsDisplayed()
+        composeTestRule.onNodeWithTag(NavigationTestTags.CART_BADGE)
+            .assertContentDescriptionContains("Carrinho, 1 item")
+            .performClick()
+        composeTestRule.onNodeWithText("Espresso Horizonte").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Muamba da Casa").assertDoesNotExist()
     }
 
     private fun openSearch() {

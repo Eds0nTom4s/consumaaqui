@@ -9,6 +9,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 fun MerchantOverviewRoute(
     onNavigateBack: () -> Unit,
     onNavigateToCatalog: (String) -> Unit,
+    onNavigateToCart: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: MerchantOverviewViewModel = hiltViewModel()
 ) {
@@ -21,6 +22,9 @@ fun MerchantOverviewRoute(
         onNavigateToCatalog = {
             viewModel.onEvent(MerchantOverviewUiEvent.OpenCatalog, onNavigateToCatalog)
         },
-        modifier = modifier
+        modifier = modifier,
+        cartAction = {
+            ao.consuma.aqui.feature.cart.presentation.components.CartActionRoute(onNavigateToCart)
+        }
     )
 }

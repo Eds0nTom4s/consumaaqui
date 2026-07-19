@@ -28,11 +28,18 @@ fun MerchantOverviewScreen(
     onRetry: () -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateToCatalog: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    cartAction: @Composable RowScope.() -> Unit = {}
 ) {
     Scaffold(
         modifier = modifier.testTag(NavigationTestTags.MERCHANT_OVERVIEW),
-        topBar = { ConsumaTopAppBar(stringResource(R.string.merchant_overview_title), onBackClick = onNavigateBack) }
+        topBar = {
+            ConsumaTopAppBar(
+                stringResource(R.string.merchant_overview_title),
+                onBackClick = onNavigateBack,
+                actions = cartAction
+            )
+        }
     ) { padding ->
         when (uiState) {
             MerchantOverviewUiState.Loading -> ConsumaLoadingState(Modifier.padding(padding).testTag(NavigationTestTags.MERCHANT_LOADING))

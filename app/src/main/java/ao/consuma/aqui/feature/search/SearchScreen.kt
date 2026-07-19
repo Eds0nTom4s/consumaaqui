@@ -29,10 +29,19 @@ import ao.consuma.aqui.feature.discovery.presentation.mapper.*
 import ao.consuma.aqui.feature.discovery.presentation.merchant.MerchantListCard
 
 @Composable
-fun SearchScreen(uiState: SearchUiState, onEvent: (SearchUiEvent) -> Unit, modifier: Modifier = Modifier) {
+fun SearchScreen(
+    uiState: SearchUiState,
+    onEvent: (SearchUiEvent) -> Unit,
+    modifier: Modifier = Modifier,
+    cartAction: @Composable RowScope.() -> Unit = {}
+) {
     Scaffold(
         modifier = modifier.testTag(NavigationTestTags.SEARCH),
-        topBar = { ConsumaTopAppBar(title = stringResource(R.string.search_title)) }
+        topBar = {
+            ConsumaTopAppBar(title = stringResource(R.string.search_title), actions = {
+                cartAction()
+            })
+        }
     ) { padding ->
         when (uiState) {
             SearchUiState.Loading -> ConsumaLoadingState(Modifier.padding(padding).testTag(NavigationTestTags.SEARCH_LOADING))
