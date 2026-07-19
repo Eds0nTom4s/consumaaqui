@@ -1,0 +1,611 @@
+RELATÓRIO TÉCNICO
+CONSUMA AQUI ANDROID — CART-FOUNDATION-MOCK-001
+Data da auditoria final: 2026-07-19
+
+1. RESUMO EXECUTIVO
+
+A fase 08 implementa uma fundação funcional de carrinho exclusivamente em
+memória. O fluxo liga Catalog e Product Detail a um domínio Cart próprio,
+CartRepository, InMemoryCartRepository thread-safe, badge global e CartScreen.
+Inclui ADD, EDIT, agregação, comerciante único, conflito explícito, substituição
+atómica, quantidade 1..99, remoção, clear e subtotal estimado. Não foram criados
+Checkout, Order, Payment, backend ou persistência. A auditoria final encontrou
+dois desvios: o mapper do badge repetia literalmente o limite 99 e replaceItem
+incrementava version num no-op exacto. O badge passou a derivar o limite de
+CartItem.MAX_QUANTITY e replaceItem passou a devolver o Cart corrente sem emissão
+ou incremento quando o snapshot resultante é idêntico. Imports mortos e uma
+inconsistência de formatação do grafo foram removidos sem alteração comportamental.
+
+2. BRANCH
+
+android/cart-foundation-mock-001
+
+3. COMMIT BASE
+
+31af2f15fe7f08b4bdfb2fffa505fe6db5a0f92a
+
+O commit base permaneceu intacto durante as quatro partes. Não houve merge,
+rebase, squash, force push ou alteração da main.
+
+4. ESTADO INICIAL
+
+O HEAD inicial era o commit base aprovado. O worktree continha a implementação
+não commitada das Partes 1–3, 291 testes unitários verdes em cada variante e 93
+testes instrumentados no código. Nenhum commit ou push da fase existia. O
+ficheiro externo de mobilidade estava não rastreado e fora do escopo.
+
+5. SNAPSHOT DE SEGURANÇA
+
+Antes da auditoria foram registados branch, HEAD, git status, diff stat,
+name-status, diff check, lista de ficheiros, dispositivo e hash do ficheiro
+externo. Ficheiro: "visao sobre mobilidade de cargas e transporte de
+consumidores consuma"; tamanho 7654 bytes; SHA-256
+c8cd4ee3c5f38533045a20fc46f27ecb59997cfd9be37b4c801b07b624224e3b.
+Não foi alterado, movido, apagado ou incluído em staging.
+
+6. ESCOPO
+
+Incluído: domínio Cart, commands/results/errors, services, repository, binding
+Hilt, implementação in-memory, CartScreen, CartViewModel, badge, componentes,
+mappers, integração Product Detail ADD/EDIT, conflito, navegação, resources,
+testes e documentação. Excluído: Checkout, pedido, pagamento, entrega, morada,
+backend, HTTP, DTOs, Room, DataStore, ficheiros de Cart e sincronização.
+
+7. FLUXO IMPLEMENTADO
+
+Catalog -> Product Detail -> configurar -> adicionar -> CartRepository ->
+mensagem -> Catalog -> badge -> Cart -> quantidade/edição/remoção/clear.
+Produto de outro comerciante -> conflito -> manter sem mutação ou substituir
+atomicamente. Cart -> Edit -> Product Detail EDIT -> replaceItem -> Cart. O
+subtotal é sempre apresentado como estimativa.
+
+8. ARQUITECTURA CART
+
+feature/cart está dividida em domain/model, domain/command, domain/result,
+domain/repository, domain/service, data, data/modules e presentation. A UI
+depende do contrato CartRepository; Hilt liga-o ao singleton
+InMemoryCartRepository. CartRepository é a única fonte de verdade e publica
+StateFlow<Cart>. Product Detail integra somente depois de ConfiguredProduct
+válido; CatalogRepository não armazena Cart.
+
+9. SEPARAÇÃO CATALOG/CART
+
+Catalog mantém produto, configuração e preços de catálogo. Cart mantém snapshots
+locais necessários para renderização. Cart não consulta CatalogRepository para
+renderizar. CatalogRepository e os modelos Catalog não dependem do domínio Cart.
+ProductDetailViewModel é a fronteira explícita: valida ConfiguredProduct e então
+chama o caso de uso/repository Cart. A dependência não contamina CatalogRepository.
+
+10. CART
+
+Cart contém id, merchant opcional, lista de CartItem, CartTotals e version.
+Valida id, version não negativa, merchant exactamente quando há itens, IDs e
+fingerprints únicos, ownership, contagens, moeda e subtotal. Cart.empty cria
+estado válido com merchant null e totals zero.
+
+11. CARTITEM
+
+CartItem é snapshot local de uma configuração validada. Contém ID de linha,
+merchant/product, nomes de apresentação, imagem opcional, quantidade, note,
+selecções e preços em minor units. Valida IDs, quantidade 1..99, note normalizada,
+ordem/unicidade de selecções, moeda, optionsPrice, totalUnitPrice e totalPrice.
+Não é CatalogProduct, ConfiguredProduct nem OrderLine.
+
+12. CARTITEMSELECTION
+
+Guarda groupId/groupName/optionId/optionName/additionalPrice. IDs e nomes são
+obrigatórios. A ordem determinística é groupId e optionId. Nomes são snapshots
+de apresentação; a identidade usa IDs.
+
+13. CARTTOTALS
+
+CartTotals contém itemCount, distinctItemCount e subtotal MoneyAmount. Rejeita
+valores negativos, distinct maior que itemCount e estados vazios incoerentes.
+Não contém entrega, impostos, descontos, serviço ou total final.
+
+14. CARTMERCHANT
+
+CartMerchant contém id e name obrigatórios. O primeiro item define o merchant do
+Cart; todos os itens subsequentes devem ter o mesmo merchantId.
+
+15. CARTCONFLICT
+
+CartConflict.DifferentMerchant separa comerciante actual e solicitado. Conflito
+é decisão de produto, não erro técnico. Detectá-lo não altera Cart nem version.
+
+16. COMMANDS
+
+AddCartItemCommand, UpdateCartItemQuantityCommand, RemoveCartItemCommand,
+ReplaceCartItemCommand e ClearCartCommand descrevem mutações. ProductCartSnapshot
+e CartOptionSnapshot transportam apenas o snapshot mínimo, nunca CatalogProduct.
+
+17. RESULTS
+
+CartResult expressa Success/Failure. AddCartItemResult distingue Added com
+merged, Conflict e Failure. O chamador consegue tratar agregação, conflito e erro
+sem inferir estado interno.
+
+18. ERRORS
+
+CartError distingue ItemNotFound, InvalidQuantity, QuantityLimitExceeded,
+CurrencyMismatch, InvalidItem, MerchantMismatch, PriceOverflow, EmptyCart e
+Unknown. A apresentação converte-os em mensagens localizadas e não expõe nomes
+técnicos.
+
+19. FINGERPRINT
+
+CartItemIdentityFactory constrói representação canónica com segmentos
+length-prefixed de merchantId, productId, pares groupId/optionId ordenados e note
+trimada. Calcula SHA-256 em UTF-8 com saída hexadecimal de 64 caracteres. Não usa
+quantity, UUID, hashCode JVM, nomes de apresentação ou serialização de objecto.
+Unicode, caracteres reservados e ordens diferentes são cobertos por testes.
+Fingerprint identifica a configuração; CartItem.id, UUID independente, identifica
+a linha concreta e permite edição/remoção sem confundir identidade semântica.
+
+20. CARTITEMFACTORY
+
+Recebe ConfiguredProduct validado e ProductCartSnapshot mínimo. Confirma merchant,
+produto/configuração, nomes, selecções, moeda e preço das opções; normaliza note,
+ordena selecções, calcula fingerprint e gera ID de linha. Não muta
+ConfiguredProduct nem guarda CatalogProduct. Snapshots podem ficar desactualizados;
+um backend futuro deve reconciliá-los.
+
+21. CARTTOTALSCALCULATOR
+
+Calcula itemCount, distinctItemCount e subtotal em MoneyAmount/Long. Verifica uma
+moeda, usa soma segura e converte overflow em PriceOverflow. Não usa Double e não
+calcula entrega, taxa, imposto ou desconto. UI e composables não recalculam totals.
+
+22. CARTMERCHANTPOLICY
+
+CartMerchantPolicy devolve DifferentMerchant apenas quando o Cart já possui outro
+merchant. Cart vazio e mesmo merchant seguem normalmente.
+
+23. CARTREPOSITORY
+
+Contrato: observar cart; addItem; replaceCartWithItem; updateQuantity; removeItem;
+replaceItem; clearCart. Não conhece Android, Compose, NavController, CatalogRepository
+concreto, persistência ou Checkout. Operações atómicas e conflitos permanecem
+explícitos.
+
+24. INMEMORYCARTREPOSITORY
+
+Implementação process-local @Singleton, substituível pelo binding CartRepository.
+Não usa Context, fixture, delay, polling, I/O, CatalogRepository ou armazenamento.
+Publica somente estados Cart válidos e listas defensivas.
+
+25. STATEFLOW
+
+mutableCart é MutableStateFlow privado; cart é StateFlow via asStateFlow. Cada
+superfície observa o contrato. Badge e CartScreen não mantêm cópia manual do
+agregado. Emissões ocorrem somente depois de construir e validar o novo Cart.
+
+26. MUTEX E CONCORRÊNCIA
+
+Um Mutex protege add, replaceCartWithItem, update, remove, replaceItem e clear.
+As secções críticas linearizam leitura, cálculo e publicação e não contêm delay
+ou operação bloqueante. Testes cobrem adds iguais/diferentes, add+clear,
+add+remove, update simultâneo, replace cart+add, remove+update,
+replace item+add, limite 99, invariantes e ausência de deadlock.
+
+27. VERSIONAMENTO
+
+Version inicia em zero, é não negativa e usa Math.addExact. Mutações efectivas
+incrementam uma vez. Update com mesma quantidade devolve o Cart actual sem
+incrementar; replaceItem com snapshot resultante idêntico faz o mesmo. Falhas e
+conflitos não publicam nem incrementam. Clear, inclusive em vazio, é reset
+explícito e cria novo cartId/version seguinte.
+
+28. AGREGAÇÃO
+
+Mesmo fingerprint soma quantity e devolve merged=true, preservando a posição e
+ID da linha existente. Excesso de 99 falha sem mutação. Note/opção/produto
+diferentes criam linhas distintas; ordem das opções não cria duplicação.
+
+29. COMERCIANTE ÚNICO
+
+O MVP aceita um comerciante por Cart. Primeiro item define merchant; mesmo
+merchant é aceite; outro merchant gera conflito. Não há limpeza silenciosa.
+Carrinho multi-comerciante está fora do MVP por implicar fulfillment, preço e
+checkout independentes.
+
+30. REPLACECARTWITHITEM
+
+Constrói primeiro o novo item e novo Cart; publica uma única emissão válida com
+novo cartId, merchant solicitado, item único, totals e version seguinte. Qualquer
+falha preserva integralmente o Cart anterior. Badge/subtotal reagem pelo StateFlow.
+
+31. REPLACEITEM
+
+Valida item, merchant, configuração e moeda. Configuração distinta substitui na
+posição da linha e preserva cartItemId. Se coincidir com outra linha, agrega na
+linha de destino, mantém a posição/ID do destino e remove a linha editada. Limite,
+totals e version são atómicos; falhas não mutam. Product Detail sanitiza grupos e
+opções inexistentes/indisponíveis contra o catálogo actual antes do comando.
+
+32. PRODUCT DETAIL ADD
+
+Modo ADD deriva da ausência de cartItemId. Configuração válida cria
+ConfiguredProduct e chama AddConfiguredProductToCart. Novo item e merge usam
+mensagens distintas e regressam ao Catalog. Badge actualiza pelo repository. A
+mensagem provisória da fase 07 foi removida. Duplo Add é bloqueado.
+
+33. PRODUCT DETAIL EDIT
+
+Modo EDIT é enum explícito e deriva de cartItemId. Carrega produto actual do
+Catalog e localiza o item no snapshot actual do CartRepository, valida merchant e
+product, restaura selecções/quantity/note, sanitiza configuração, recalcula preço
+e usa CTA Guardar alterações. replaceItem bem-sucedido regressa ao Cart; Back sem
+guardar não muta. Item removido externamente é tratado como not found.
+
+34. CARTSCREEN
+
+Possui Top App Bar, Empty e Content, merchant, LazyColumn com key item.id, cards,
+opções, note, preço unitário, linha, quantidade, subtotal estimado, aviso,
+continuar, remover, limpar e dialogs. Mantém conteúdo durante mutações. Não expõe
+IDs, não calcula totals e não apresenta Checkout activo.
+
+35. CARTVIEWMODEL
+
+Observa CartRepository, mapeia UiState, executa quantity/remove/clear, gere
+confirmações, pending operation, navegação e mensagens. Não guarda
+MutableStateFlow<Cart>, não consulta Catalog, não conhece implementação concreta,
+NavController ou Checkout. Duplo toque é bloqueado e erros preservam Content.
+
+36. BADGE
+
+CartBadgeViewModel observa o mesmo CartRepository e apenas mapeia
+Cart.totals.itemCount. Zero oculta, 1..99 mostra valor e >=100 mostra 99+.
+Singular/plural/overflow têm semântica própria. O limite visual deriva de
+CartItem.MAX_QUANTITY e não existe estado manual do badge.
+
+37. ACESSO GLOBAL
+
+CartActionRoute aparece em Home, Search, Merchant Overview, Catalog e Product
+Detail. Não aparece em Splash, Onboarding, Location Setup, telas institucionais,
+CartScreen ou catálogo normal do Design System. ConsumaTopAppBar usa slot
+genérico actions; Design System não conhece Cart.
+
+38. QUANTIDADE
+
+Selector sem input livre, limites 1..99 derivados do domínio, decrease desactivado
+em 1 e increase em 99. Decrementar em 1 não remove. Operação pendente desactiva
+toques duplicados; linha, totals e badge actualizam pelo repository.
+
+39. REMOÇÃO
+
+Remoção exige acção e confirmação contextual com nome do produto. Cancelar não
+muta; confirmar remove atomicamente. Última linha produz Cart vazio, merchant null,
+badge oculto e subtotal ausente.
+
+40. CLEAR
+
+Clear exige confirmação de que todos os produtos serão removidos. Cancelar não
+muta; confirmar cria novo Cart vazio, novo cartId, merchant null, totals zero e
+version seguinte.
+
+41. SUBTOTAL ESTIMADO
+
+Toda a UI usa “Subtotal estimado” e explica que preço/disponibilidade serão
+confirmados. Não usa “valor a pagar”, “total final” ou autoridade financeira.
+
+42. NAVEGAÇÃO
+
+Rotas: cart; merchant/{merchantId}/catalog/product/{productId}; e a mesma rota com
+?cartItemId opcional. IDs são validados e Uri.encode é aplicado individualmente,
+incluindo reservados e Unicode. Cart não recebe argumentos ou objectos. Back
+retorna a Home/Search/Overview/Catalog; Cart->Edit->Cart funciona; launchSingleTop
+evita duplicação relevante.
+
+43. SAVEDSTATEHANDLE
+
+Product Detail guarda somente merchantId/productId/cartItemId de argumentos,
+selecções codificadas por IDs, quantity, note e tentativa de validação. Não guarda
+Cart, CartItem, ConfiguredProduct, CatalogProduct, UiModel, conflito ou result.
+Comando de conflito é só memória e fecha na recriação. Remove/clear ficam em
+estado simples do CartViewModel.
+
+44. ACESSIBILIDADE
+
+Badge anuncia vazio, singular, plural e mais de 99. Cart expõe título, merchant,
+produto, configuração, note, preços, quantity, incrementar/diminuir, editar,
+remover, subtotal, avisos, continuar, limpar e dialogs. Test tags não substituem
+semântica. Touch targets usam IconButton/Buttons Material.
+
+45. DARK THEME
+
+Previews e testes instrumentados cobrem Empty, Content, dialogs, badge, conflito
+e EDIT. Validação real em Samsung SM-S928U1 mostrou cards, subtotal, badge e
+acções legíveis em tema escuro, sem crash.
+
+46. FONT SCALE
+
+Testes e validação real cobriram 1.3x e 1.5x. Cart permaneceu rolável, textos
+longos quebraram linha, selectors e dialogs continuaram acessíveis e não houve
+clipping crítico. Não se declara medição WCAG.
+
+47. ROTAÇÃO
+
+Portrait->landscape->portrait manteve itens, quantities 99/1, subtotal 65.550 Kz
+e badge durante a vida do processo. Product ADD/EDIT preservam configuração
+simples; conflito transitório fecha por segurança.
+
+48. PERFORMANCE
+
+Repository usa Mutex único, sem blocking I/O, delay ou polling; totals são
+calculados uma vez por mutação e só estados válidos são publicados. LazyColumn
+usa keys; mapper fica fora de items; subtotal não é recalculado na UI; badge
+observa apenas o fluxo necessário; nenhum Cart é guardado em remember.
+
+49. TESTES UNITÁRIOS
+
+291 testes em cada variante. Debug: 291 pass, zero failures/errors/skips, 1,665 s
+XML e 2 min 45 s Gradle. Staging: 291 pass, zero failures/errors/skips, 1,728 s
+XML e 1 min 19 s Gradle. Release: 291 pass, zero failures/errors/skips, 1,876 s
+XML e 57 s Gradle. Cobrem modelos, fingerprint, factory, totals, repository,
+concorrência, ViewModels, mapper, navegação e regressões históricas.
+
+50. TESTES INSTRUMENTADOS
+
+93 métodos @Test no código. Execução final: XML oficial com 93 iniciados, 92
+pass, 1 skipped, zero failures/errors e 110,452 s; Gradle aprovado em 2 min 3 s.
+O skip é release_does_not_show_design_system_entry, deliberado num APK Debug. O
+console UTP apresentou “Finished 94”, mas iniciou 93 e o XML contém 93; o XML é
+a contagem oficial. Uma tentativa integral anterior teve uma falha transitória
+no scroll herdado HomeDiscoveryTest.category_filters_and_all_restores; o teste
+passou isoladamente e a repetição integral final passou sem alteração de código.
+Artefactos: app/build/outputs/androidTest-results/connected/debug,
+app/build/reports/androidTests/connected/debug e respectivos XML/HTML/UTP.
+Dispositivo Samsung SM-S928U1, Android 16, API 36, serial R5CX12XNNJX.
+
+51. COBERTURA ACUMULADA
+
+Preservadas App Foundation, Design System, App Shell, quatro tabs, onboarding,
+localização, Home, Search, Merchant Overview, Catalog, Product Detail e toda a
+configuração de produto. Adicionadas Cart domain/repository/UI, badge, conflito,
+replace, edição, quantity, remove, clear, subtotal, Hilt singleton, acessibilidade,
+dark theme, font scale, rotação e concorrência.
+
+52. BUILDS
+
+assembleDebug (45 s), assembleStaging (25 s) e assembleRelease (1 min 43 s)
+foram aprovados. SDK, applicationId ao.consuma.aqui, namespace, package, minSdk
+26 e targetSdk 36 não mudaram. Release contém Cart e não expõe ferramenta de
+desenvolvimento.
+
+53. LINT
+
+lintDebug aprovado em 2 min 40 s com zero erros. Total: 34 warnings herdados e
+zero warning novo da fase Cart.
+
+54. WARNINGS
+
+GRUPO                         QTD  ORIGEM                         ESTADO/RISCO/DECISÃO
+Gradle/AGP                    2    wrapper e version catalog      herdado; baixo; não actualizar
+Dependências Gradle           9    libs.versions.toml             herdado; baixo; fase dedicada
+Versões mais recentes         7    libs.versions.toml             herdado; baixo; fase dedicada
+Resources não utilizados     14    7 cores + 7 strings antigas   herdado; baixo; limpar noutra fase
+Modifier parameter            1    ConsumaFeedback Design System herdado; baixo; não tocar
+Label redundante              1    AndroidManifest               herdado; baixo; não tocar
+Código gerado/packaging       0    —                              sem ocorrência
+
+Nenhum warning aponta para feature/cart, Product Detail alterado ou Top App Bar.
+Não houve supressão e dependências não foram actualizadas.
+
+55. VALIDAÇÃO MANUAL
+
+Executada em dispositivo real: add, badge, Cart, increase/decrease, subtotal,
+remove cancelar/confirmar, clear cancelar/confirmar, Empty, conflito A/B manter e
+substituir, EDIT opções/quantity/note/save, Back sem guardar, Home/Search/Overview/
+Catalog->Cart->Back, Bottom Navigation, tema claro/escuro, 1.3x/1.5x, dialogs,
+99+, textos longos e rotação. Configurações do aparelho foram restauradas e a
+aplicação fechada.
+
+56. LOGCAT
+
+Sem FATAL, ANR, crash, erro Hilt/Navigation/SavedStateHandle/StateFlow, duplicate
+key, snapshot mutation, ArithmeticException ou ConcurrentModificationException.
+Mensagens de ashmem, perfil Adreno e libpenguin.so eram do framework/vendor e não
+causaram stack trace ou falha funcional.
+
+57. FICHEIROS CRIADOS
+
+Produção: toda a árvore app/src/main/java/ao/consuma/aqui/feature/cart, com 26
+ficheiros de domínio, data e apresentação. Testes: árvore
+app/src/test/java/ao/consuma/aqui/feature/cart; CartHiltSingletonTest.kt e
+CartPresentationTest.kt em androidTest. Documentação: este relatório.
+
+58. FICHEIROS ALTERADOS
+
+DiscoverySearchFlowTest.kt; MerchantIdRouteEncodingTest.kt; ConsumaAppState.kt;
+AppDestination.kt; AppShellNavigation.kt; NavigationTestTags.kt; CatalogRoute.kt;
+CatalogScreen.kt; ProductDetailContract.kt; ProductDetailRoute.kt;
+ProductDetailScreen.kt; ProductDetailViewModel.kt; MerchantOverviewRoute.kt;
+MerchantOverviewScreen.kt; HomeRoute.kt; HomeScreen.kt; SearchRoute.kt;
+SearchScreen.kt; strings.xml; AppDestinationTest.kt; ProductDetailViewModelTest.kt.
+
+59. FICHEIROS EXTERNOS EXCLUÍDOS
+
+"visao sobre mobilidade de cargas e transporte de consumidores consuma" permanece
+não rastreado, hash de segurança registado e explicitamente excluído de ambos os
+commits. Outputs Gradle, APKs, screenshots, XML/HTML e Logcat também não são
+versionados.
+
+60. RISCOS
+
+Cart perde-se quando o processo termina; snapshots/preços podem envelhecer;
+validação financeira ainda não existe; formatação monetária local é simples; a
+validação manual cobriu um dispositivo/API; warnings herdados permanecem. Uma
+tentativa instrumentada revelou flakiness herdada de scroll na Home, embora o
+teste isolado e a repetição integral tenham passado sem alteração. Estes riscos
+são explícitos e não são mascarados como capacidade disponível.
+
+61. PENDÊNCIAS
+
+Fases futuras devem decidir persistência, expiry/reconciliação, backend e
+Checkout. Devem ainda validar uma matriz maior de dispositivos e acessibilidade
+medida. Não há pendência funcional bloqueante para a fundação in-memory.
+
+62. PLANO DE TRANSIÇÃO INMEMORY → PERSISTÊNCIA
+
+Fluxo actual:
+Cart UI -> CartViewModel -> CartRepository -> InMemoryCartRepository ->
+StateFlow<Cart>
+
+Fluxo futuro possível:
+Cart UI -> CartViewModel -> CartRepository -> PersistentCartRepository ->
+LocalCartDataSource -> Room ou DataStore -> StateFlow<Cart>
+
+Alternativa futura: CompositeCartRepository -> memória -> base local -> backend.
+
+MANTER: Cart, CartItem, CartTotals, CartMerchant, CartConflict, commands, results,
+errors, CartRepository, CartViewModel, CartScreen, badge, mappers, navegação,
+testes, comerciante único, fingerprint, calculator e CartItemFactory.
+
+SUBSTITUIR: InMemoryCartRepository como implementação runtime exclusiva.
+
+ADICIONAR: entidades, mappers domínio/persistência, transacções, schema version,
+migrations, restore, expiry, freshness, limpeza, reconciliação e encryption se a
+análise de dados exigir. O contrato actual permite trocar implementação sem
+alterar a UI.
+
+63. MATRIZ INMEMORY → PERSISTÊNCIA
+
+COMPONENTE | ACTUAL | FUTURO | MANTÉM | SUBSTITUI | RISCO
+CartRepository | contrato estável | mesmo contrato | contrato/API | nada | evolução incompatível
+InMemoryCartRepository | runtime exclusiva | apoio/test double | testes | binding runtime | perda no processo
+PersistentCartRepository | inexistente | implementação runtime | contrato | implementação actual | atomicidade/migração
+Cart | agregado em memória | agregado restaurado | invariantes | nada | schema/mapping
+CartItem | snapshot local | linha persistida | semântica | nada | freshness
+fingerprint | SHA-256 determinístico | mesmo algoritmo | algoritmo | nada | compatibilidade
+version | monotónica no processo | monotónica persistida | regra | storage | concorrência/restart
+StateFlow | process-local | data source observável | consumo UI | produtor | emissão/dispatcher
+Room/DataStore | ausentes | escolha futura | domínio | storage exclusivo | complexidade
+migrations | ausentes | versionadas/testadas | testes actuais | nada | perda de dados
+restore | arranque vazio | restauração validada | Cart válido | empty inicial | corrupção/expiry
+expiry | ausente | política explícita | fronteira | nada | UX/regras
+testes | in-memory/concurrency | DAO/migration/restore | suite actual | doubles runtime | flakiness
+
+64. ANÁLISE ROOM VS DATASTORE
+
+DataStore é simples para estado pequeno e serialização integral, mas menos
+adequado a linhas, consultas e mutações parciais/transaccionais. Room oferece
+transacções, edição por linha, constraints e migrations, com maior custo de
+schema/DAO. Recomendação preliminar: Room tende a ser superior para múltiplas
+linhas, opções, edição, versionamento e sincronização futura. A decisão final
+pertence à fase de persistência; nenhuma dependência foi adicionada agora.
+
+65. PLANO DE TRANSIÇÃO CART → CHECKOUT
+
+Fluxo actual:
+Product Detail -> CartRepository -> Cart -> CartScreen -> subtotal estimado
+
+Fluxo futuro:
+CartScreen -> CheckoutEntryValidator -> CheckoutRoute -> Fulfillment Selection ->
+Customer Data -> Address/Pickup -> Quote -> Server Revalidation -> Order Draft ->
+Payment -> Confirmation
+
+MANTER: Cart, CartItem, CartRepository, CartScreen, badge, edição, quantity,
+remove, subtotal local, merchant consistency, fingerprint e testes.
+
+ADICIONAR: CheckoutRepository, CheckoutDraft, fulfillment, customer data,
+delivery/pickup, address, backend validation, quote, price/stock reconciliation,
+order creation, payment e idempotency. Nenhum destes componentes existe na fase 08.
+
+66. MATRIZ CART → CHECKOUT
+
+COMPONENTE | ESTADO ACTUAL | ESTADO FUTURO | MANTÉM | ADICIONA | RISCO
+Cart | intenção local | entrada revalidada | agregado | validação | freshness
+CartItem | snapshot estimado | linha reconciliada | identidade | reconciliação | disponibilidade
+subtotal | estimado local | quote do servidor | indicador local | valor autoritativo | preço alterado
+checkout CTA | ausente | entrada validada | nada | CTA activo | promessa indevida
+CheckoutRoute | ausente | fluxo próprio | AppShell | destino/estado | navegação
+merchant validation | cliente único | revalidação servidor | regra local | validação remota | mismatch
+price validation | cálculo local | autoridade backend | estimativa | reconciliação | divergência
+stock validation | ausente | servidor | nada | validação | indisponibilidade
+delivery | ausente | fulfillment | nada | capacidade | cobertura/custo
+pickup | ausente | fulfillment | merchant | capacidade | horário
+order draft | ausente | servidor/idempotente | itens reconciliados | draft | duplicação
+payment | ausente | provider seguro | nada | fluxo seguro | fraude/falha
+idempotency | ausente | chaves servidor | nada | chaves/política | pedidos duplicados
+testes | Cart completo | integração/contratos/E2E | suite Cart | suites futuras | ambiente
+
+67. AUTORIDADE FINANCEIRA
+
+O Cart Android não é autoridade financeira. Antes do pedido, o backend deve
+revalidar merchant, catálogo, produto, opções, availability, stock, preço,
+compareAt, promoção, quantity, moeda, subtotal e regras comerciais. Resultados
+possíveis: válido, preço alterado, produto indisponível, opção removida,
+quantidade ajustada, rejeição parcial ou carrinho expirado. A UI futura deve
+mostrar reconciliação e pedir confirmação quando necessário.
+
+68. INTEGRAÇÃO FUTURA COM MOBILIDADE/LOGÍSTICA
+
+Cart não conhece parceiros de mobilidade. Checkout futuro poderá pedir
+capacidades pickup, delivery, self-navigation e delivery partner por interfaces
+plugáveis, com fallback nativo. Logística fica fora do domínio Cart. O ficheiro
+externo de visão de mobilidade não integra os commits desta fase.
+
+69. ESTADO DO WORKTREE
+
+Antes dos commits, código/resources/testes e este relatório constituem as
+alterações da fase. Após staging selectivo e dois commits, a árvore funcional
+deve ficar limpa e apenas o ficheiro externo não rastreado pode permanecer.
+
+70. CONFIRMAÇÃO DE ESCOPO
+
+Implementados somente Cart in-memory e integrações necessárias. Não existem
+Checkout, backend, pedido, pagamento, entrega, morada ou persistência de Cart.
+Não existe quinta tab; AppShell continua único; SDKs/package não mudaram. A fase
+09 não foi iniciada.
+
+71. ANÁLISE ARQUITECTURAL
+
+Decisões: domínio Cart separado, repository como fonte única, StateFlow para
+observação, Mutex para linearização, carrinho de um merchant, fingerprint
+semântico e UUID de linha, ConfiguredProduct distinto, snapshot local e ausência
+consciente de persistência/Checkout.
+
+Alternativas rejeitadas: guardar Cart no ProductDetail/AppState; callbacks
+manuais de badge; multi-merchant; usar hashCode; usar ConfiguredProduct como
+linha; limpar automaticamente em conflito; simular Checkout; persistir cedo sem
+schema. Todas quebrariam fronteiras, segurança, previsibilidade ou escopo.
+
+Impacto futuro: CartRepository permite trocar data source; StateFlow mantém a UI;
+fingerprint favorece merge e persistência; snapshots desacoplam Catalog, mas
+exigem reconciliação. UUID continua necessário para direccionar linha concreta.
+
+Custos/riscos: mais tipos e mappers que uma lista no ViewModel, porém menor
+acoplamento e testes determinísticos. Dívida consciente: process-only, snapshots
+stale, formatação monetária simples, ausência de expiry/backend e validação em um
+dispositivo real.
+
+Oportunidades: reutilizar domínio, calculator, factory, conflito, badge, UI e
+testes numa implementação persistente; aplicar o mesmo contrato a composite
+local/remoto. Estratégia backend: quote/revalidation autoritativa, reconciliação
+visível, order draft e idempotency.
+
+Critérios para fase 09: escopo aprovado, contrato de storage/API, decisão
+Room/DataStore, schema/migrations, política de expiry, modelo de reconciliação,
+segurança de dados e matriz de testes. Nenhum desses itens foi iniciado aqui.
+
+72. FRONTEIRAS QUE NÃO DEVEM SER QUEBRADAS
+
+- Catalog não armazena Cart e Cart não carrega Catalog.
+- Product Detail integra somente depois de configuração válida.
+- UI não conhece repository concreto; CartRepository é fonte única.
+- Badge deriva do Cart; Cart não entra em SavedStateHandle.
+- ConfiguredProduct não é CartItem; CartItem não é OrderLine.
+- Subtotal não é valor final; backend futuro revalida preços/stock.
+- Conflito não é erro técnico; replace é atómico.
+- Checkout e persistência não pertencem à fase 08.
+- Mobilidade/logística não pertence ao domínio Cart.
+
+73. CONFORMIDADE FINAL
+
+Os 45 pontos da auditoria foram confirmados. O item relativo a Catalog significa
+que CatalogRepository/modelos não dependem de Cart; ProductDetailViewModel é a
+fronteira de integração intencional requerida por ADD/EDIT. Os dois desvios
+encontrados — limite 99 duplicado no mapper do badge e incremento de version num
+replaceItem sem alteração efectiva — foram corrigidos. Não houve alteração de
+SDK, package, dependências, contrato externo ou capacidade fora do escopo.
