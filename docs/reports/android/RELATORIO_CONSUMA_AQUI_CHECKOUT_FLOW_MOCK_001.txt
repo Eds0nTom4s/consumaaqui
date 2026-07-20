@@ -1,0 +1,767 @@
+RELATÓRIO TÉCNICO
+CONSUMA AQUI ANDROID — CHECKOUT-FLOW-MOCK-001
+Data da auditoria final: 2026-07-20
+
+1. RESUMO EXECUTIVO
+
+A fase 09 implementa o fluxo de Checkout em memória (mock) sobre a fundação de
+Carrinho da fase 08. O domínio Checkout é independente de Cart, Order, Payment,
+backend, entrega real e persistência. Foram criados CheckoutSession,
+CheckoutDraft, CheckoutQuote, capabilities mock, Pickup e Delivery mock,
+validadores, quote calculator, draft factory, CheckoutRepository,
+InMemoryCheckoutRepository thread-safe, CheckoutScreen, ConfirmationScreen,
+navegação, integração com CartScreen e testes. A confirmação dupla é
+idempotente, produzindo o mesmo CheckoutDraft; o Cart nunca é limpo. A
+auditoria final não encontrou desvios que exigissem correção. Todos os gates
+técnicos passaram, com excepção da repetição dos testes instrumentados por
+falta de dispositivo Android conectado nesta sessão.
+
+2. BRANCH
+
+android/checkout-flow-mock-001
+
+3. COMMIT BASE
+
+9a7be2e56a18ec78195ca02c04e7c4454d7f8584
+
+O commit base permaneceu intacto. Não houve merge, rebase, squash, force push
+ou alteração da main.
+
+4. ESTADO INICIAL
+
+HEAD no commit base aprovado. Worktree continha a implementação não commitada
+das Partes 1–3. Nenhum commit ou push da fase existia. O ficheiro externo de
+mobilidade estava não rastreado e fora do escopo.
+
+5. SNAPSHOT DE SEGURANÇA
+
+Antes da auditoria foram registados branch, HEAD, git status, diff stat,
+name-status, diff check, lista de ficheiros, dispositivo e hash do ficheiro
+externo. Ficheiro: "visao sobre mobilidade de cargas e transporte de
+consumidores consuma"; tamanho 7654 bytes; SHA-256
+c8cd4ee3c5f38533045a20fc46f27ecb59997cfd9be37b4c801b07b624224e3b.
+Não foi alterado, movido, apagado ou incluído em staging.
+
+6. ESCOPO
+
+Incluído: domínio Checkout, commands/results/errors/conflicts, validators,
+quote calculator, draft factory, CheckoutRepository, InMemoryCheckoutRepository,
+Hilt module, CheckoutRoute/Screen/ViewModel, ConfirmationRoute/Screen,
+componentes, mappers, UI models, integração CartScreen, navegação, resources,
+testes unitários e testes instrumentados.
+
+Excluído: Order, Payment, backend, HTTP, DTOs, Room, DataStore, entrega real,
+mapa, GPS, geocoding, tracking, logística, persistência de sessão/draft e
+sincronização remota.
+
+7. FLUXO IMPLEMENTADO
+
+Cart -> CheckoutRoute -> startCheckout -> fulfillment -> customer -> details ->
+quote -> review -> confirm -> CheckoutDraft -> ConfirmationScreen. O Carrinho
+permanece intacto. Pickup não tem taxa. Delivery mock tem taxa determinística
+por município (Luanda 1500 Kz, outros 2000 Kz em unidades menores). A quote
+expira em 10 minutos. CartChanged e QuoteExpired bloqueiam a confirmação.
+Reset limpa sessão/draft e preserva Cart.
+
+8. ARQUITECTURA CHECKOUT
+
+feature/checkout está dividida em domain/model, domain/command, domain/result,
+domain/repository, domain/service, data, data/modules e presentation.
+CheckoutRepository é o contrato; InMemoryCheckoutRepository é o singleton
+concreto. A UI depende apenas do contrato. Checkout depende de CartRepository;
+CartRepository não conhece Checkout.
+
+9. DEPENDÊNCIA CHECKOUT → CART
+
+InMemoryCheckoutRepository recebe CartRepository. StartCheckout consulta o
+carrinho actual. CheckoutEntryValidator valida o Cart e constrói snapshots de
+CheckoutItem. Não existe importação, referência ou dependência de Cart para
+Checkout.
+
+10. CHECKOUTSESSION
+
+Contém id, cartId, cartVersion, cartItemCount, cartSubtotal, currencyCode,
+merchantId, merchantName, items (snapshot imutável), capabilities,
+selectedFulfillmentMethod, customer, fulfillment, quote, status e version.
+Invariantes: IDs não vazios, versions >= 0, merchant obrigatório, items não
+vazios, moeda única, subtotal consistente com items, fulfillment compatível com
+método seleccionado, quote alinhada ao cart snapshot, estados ReadyForReview e
+ConfirmedMock só quando completos.
+
+11. CHECKOUTSESSIONSTATUS
+
+Started, CustomerPending, FulfillmentPending, QuotePending, ReadyForReview,
+ConfirmedMock, Invalidated. Cada estado reflete exactamente o preenchimento dos
+campos obrigatórios.
+
+12. CHECKOUTITEM
+
+Snapshot checkout-owned de uma linha de carrinho. Contém cartItemId,
+merchantId, productId, productName, quantity, selections, note, unitPrice,
+totalPrice e configurationFingerprint. Valida IDs, quantidade positiva,
+multiplicação unitPrice * quantity == totalPrice, moeda consistente.
+
+13. CHECKOUTCUSTOMER
+
+fullName normalizado (trim, 2..120 caracteres) e CheckoutContact (phoneNumber
+obrigatório, email opcional normalizado). Não há OTP, perfil, armazenamento nem
+log.
+
+14. CHECKOUTCONTACT
+
+phoneNumber não vazio; email nullable e normalizado para lowercase sem espaços.
+
+15. CHECKOUTFULFILLMENT
+
+Sealed interface com Pickup e Delivery. Ambos expõem method. Pickup contém
+PickupDetails; Delivery contém DeliveryDetails e method = DELIVERY_MOCK.
+
+16. PICKUP
+
+PickupDetails: contactName, contactPhone, desiredTime (AsSoonAsPossible ou
+Scheduled). Não há calendário real, taxa, SLA, integração com comerciante nem
+notificação. No UI apresenta "Assim que possível" e aviso de futuro.
+
+17. DELIVERY MOCK
+
+DeliveryDetails: address (DeliveryAddress), instructions, recipientName,
+recipientPhone. DeliveryAddress: province, municipality, districtOrArea,
+streetOrReference, buildingOrHouse, referencePoint, latitude e longitude
+(opcionais, sempre null na UI). Não há mapa, GPS, geocoding, parceiro, tracking
+ou operador logístico. UI exibe badges "Simulação" e avisos explícitos.
+
+18. DELIVERYADDRESS
+
+Campos validados por CheckoutAddressValidator: province/município obrigatórios
+(<=120), rua obrigatória (<=200), bairro/edifício/reference/instructions com
+limites, latitude/longitude aparecem juntas e dentro dos ranges (-90..90,
+-180..180). Código postal não existe.
+
+19. CHECKOUTCAPABILITIES
+
+pickupAvailable e deliveryAvailable por comerciante. CheckoutCapabilitiesProvider
+tem fixtures mock para merchant ids conhecidos; fallback permite ambas. Não
+consulta Discovery/backend.
+
+20. CHECKOUTQUOTE
+
+id, sessionId, cartVersion, subtotal, charges, total, currencyCode,
+estimatedPreparationMinutes, estimatedDeliveryMinutes, expiresAt, source.
+CheckoutQuoteSource.MockFixedPolicy indica origem mock. Valida moedas,
+non-negative durations e total = subtotal + charges via CheckoutTotals.
+
+21. CHECKOUTCHARGE
+
+type (DELIVERY_ESTIMATE, SERVICE_ESTIMATE) e amount (MoneyAmount).
+
+22. CHECKOUTTOTALS
+
+subtotal + charges = total, com validação de moeda e soma. Overflow é
+controlado por ArithmeticException.
+
+23. CHECKOUTDRAFT
+
+Intenção validada transient. Contém id, sessionId, cartId, cartVersion,
+merchantId, merchantName, items, customer, fulfillment, quote, clientReference,
+createdAt. Não é Order, não cria Payment, não altera Cart. Não implementa
+Serializable nem Parcelable.
+
+24. COMMANDS
+
+StartCheckoutCommand, UpdateCustomerCommand, SelectFulfillmentCommand,
+UpdateDeliveryAddressCommand, UpdatePickupDetailsCommand, RequestQuoteCommand,
+ConfirmCheckoutCommand. MockCheckoutScenario controla fixtures de erro/expiração/
+carrinho alterado/indisponibilidade.
+
+25. RESULTS
+
+CheckoutResult<out T>: Success, Conflict, Failure.
+
+26. ERRORS
+
+EmptyCart, InvalidCart, CartChanged, InvalidCustomer, InvalidPhone,
+InvalidEmail, FulfillmentUnavailable, InvalidAddress, InvalidPickupDetails,
+QuoteUnavailable, QuoteExpired, CurrencyMismatch, PriceOverflow,
+SessionNotFound, SessionAlreadyConfirmed, InvalidState, Unknown.
+
+27. CONFLICTS
+
+CartChanged (initial vs current id/version), CartCleared, MerchantChanged,
+CurrencyChanged. Distintos de falhas; permitem reinício controlado.
+
+28. ENTRY VALIDATOR
+
+CheckoutEntryValidator recebe Cart, rejeita carrinho vazio, merchant inválido,
+items inválidos, moeda inconsistente, subtotal incorreto. Produz
+CheckoutEntrySnapshot com lista imutável de CheckoutItem. Cart original não é
+alterado.
+
+29. CUSTOMER VALIDATOR
+
+CheckoutCustomerValidator: trim do nome, 2..120, telefone normalizado (remove
+espaços, 9..15 dígitos, prefixo + permitido), email opcional com validação
+básica. Retorna CustomerValidationResult.Valid ou Invalid com erro específico.
+
+30. ADDRESS VALIDATOR
+
+CheckoutAddressValidator: trim, limites, validação de lat/long em conjunto,
+retorna AddressValidationResult.Valid/Invalid. Não persiste dados.
+
+31. FULFILLMENT VALIDATOR
+
+CheckoutFulfillmentValidator: isAvailable verifica capabilities; validatePickup
+reusa customer validator; validateDelivery reusa customer + address validators.
+
+32. QUOTE CALCULATOR
+
+CheckoutQuoteCalculator: deterministic mock policy. Pickup sem charges; Delivery
+com taxa fixa por município. Não calcula distância. Usa Clock injectável,
+QUOTE_VALIDITY = 10 minutos. Trata overflow e currency mismatch.
+
+33. DRAFT FACTORY
+
+CheckoutDraftFactory: só cria quando session ReadyForReview, cartId/version
+esperados coincidem, customer/fulfillment/quote presentes, quote não expirada e
+quote alinhada à sessão. Gera id e clientReference via CheckoutIdGenerator.
+
+34. CHECKOUTREPOSITORY
+
+Contrato: session (StateFlow), draft (StateFlow), startCheckout, updateCustomer,
+selectFulfillment, updateDeliveryAddress, updatePickupDetails, requestQuote,
+confirmCheckout, resetCheckout. Sem Android, UI, backend ou persistência.
+
+35. INMEMORYCHECKOUTREPOSITORY
+
+@Singleton, MutableStateFlow privados, StateFlow públicos. Todas as mutações
+usam Mutex.withLock. Versionamento monotónico com Math.addExact. No-ops sem
+incremento quando dados iguais. Conflitos e falhas retornam resultados
+explícitos. resetCheckout atomically limpa session e draft.
+
+36. STATEFLOW
+
+session e draft publicam apenas valores válidos (garantidos pelas invariantes
+do domain model). Estado null representa ausência de sessão.
+
+37. MUTEX
+
+private val mutex = Mutex(). Todas as operações de escrita/leitura coordenada
+passam por mutex.withLock. Testes de concorrência confirmam serialização e
+monotonicidade de versões.
+
+38. VERSIONAMENTO
+
+CheckoutSession.version começa em 0 e incrementa em +1 por mutação efectiva
+(seleção de fulfillment, customer, details, quote, confirmação). No-ops não
+incrementam. Overflow gera IllegalStateException.
+
+39. CONFIRMAÇÃO DUPLA
+
+confirmCheckout, quando status já é ConfirmedMock e cartId/version coincidem,
+devolve o mesmo CheckoutDraft (mesmo id, mesma referência) sem criar novo. Se
+expected cart divergir, retorna Conflict. Teste confirma assertSame(first,
+second).
+
+40. RESET
+
+resetCheckout limpa mutableSession, mutableDraft e scenario. CartRepository não
+é tocado. Testes confirmam Cart inalterado.
+
+41. CHECKOUTVIEWMODEL
+
+Possui formulários locais (CustomerFormUiState, PickupFormUiState,
+DeliveryFormUiState), currentStep, pendingOperation, cartConflict. Não chama
+repository por carácter. Usa SavedStateHandle apenas para textos/IDs/etapa.
+Não armazena CheckoutSession, CheckoutDraft nem Cart. Não conhece NavController.
+Não calcula totais (usa mapper). Não limpa Cart.
+
+42. CHECKOUTSCREEN
+
+Scaffold com TopAppBar "Preparar pedido". Estados: Initializing, Content,
+CartConflict, Error, ConfirmedMock. Step indicator, formulários por etapa,
+review, botões Continuar/Voltar/Confirmar/Refresh quote. TestTags constantes.
+
+43. STEPS
+
+Fulfillment -> Customer -> Details -> Review. Confirmation é navegação para
+ecrã separado. EditStep permite saltar para etapas anteriores completadas.
+
+44. CUSTOMER FORM
+
+Campos nome, telefone, email. Validação local com mensagens de erro. Sem PII
+em testTags dinâmicas.
+
+45. PICKUP FORM
+
+contactName, contactPhone, badge "Assim que possível", aviso de futuro.
+
+46. DELIVERY FORM
+
+province, municipality, districtOrArea, streetOrReference, buildingOrHouse,
+referencePoint, recipientName, recipientPhone, instructions (counter até 300),
+avisos de simulação e dados sensíveis. Coordenadas não estão na UI.
+
+47. REVIEW
+
+CheckoutReviewSection apresenta merchant, itens, customer, fulfillment, quote
+(subtotal estimado, charges, total estimado), aviso financeiro. Botões para
+editar etapas anteriores. Botão "Confirmar intenção".
+
+48. CONFIRMATION
+
+CheckoutConfirmationScreen apresenta "Intenção preparada", referência de
+simulação, merchant, total estimado, método. Aviso explícito: "Esta versão
+ainda não cria um pedido real nem realiza pagamento." Botão "Voltar ao
+carrinho" preserva Cart.
+
+49. CARTCHANGED
+
+Se Cart mudar entre start e quote/confirmation, requestQuote ou confirmCheckout
+retornam CheckoutConflict.CartChanged. UI mostra mensagem e permite reiniciar
+ou rever carrinho.
+
+50. QUOTEEXPIRED
+
+Quote com expiresAt <= now é apresentada como expirada. Botão "Actualizar
+estimativa" gera nova quote. confirmCheckout rejeita quote expirada com
+CheckoutError.QuoteExpired.
+
+51. NAVEGAÇÃO
+
+Rotas: checkout e checkout/confirmation, ambas sem argumentos PII. Bottom
+Navigation oculta em Checkout e Confirmation (ConsumaAppState).
+Cart Action ausente no top bar. Confirmation não regressa ao formulário
+confirmado (popUpTo inclusivo). AppShell permanece único. Checkout disponível
+em Release.
+
+52. SAVEDSTATEHANDLE
+
+Chaves: session_id, step, fulfillment, customer_name, customer_phone,
+customer_email, pickup_name, pickup_phone, delivery_province,
+delivery_municipality, delivery_area, delivery_street, delivery_building,
+delivery_reference, delivery_recipient, delivery_phone, delivery_instructions.
+Apenas strings/IDs/nomes de enum. Nenhum objecto de domínio.
+
+53. PRIVACIDADE
+
+Busca por Log.d/i/w/e, println, Timber em app/src/main/java não encontrou
+ocorrências. Nomes, telefones, emails, moradas e instruções não entram em
+route arguments, testTags dinâmicas, logs, exception messages nem dumps de
+Draft. resetCheckout remove sessão/draft. Novo checkout após confirmação limpa
+formulários e não herda PII antigo.
+
+54. ACESSIBILIDADE
+
+Text fields com labels, step indicator com stateDescription e progress,
+RadioButtons com Role, botões com testTags constantes, error summaries,
+mensagens inline semânticas, previews para dark theme e font scale.
+
+55. DARK THEME
+
+Previews em CheckoutScreen, CheckoutForms, CheckoutSummaries,
+CheckoutStepIndicator, CheckoutConfirmationScreen cobrem UI_MODE_NIGHT_YES.
+
+56. FONT SCALE
+
+Preview em CheckoutScreen com fontScale = 1.5f. LazyColumn com PaddingValues e
+scroll vertical assegura acessibilidade.
+
+57. ROTAÇÃO
+
+SavedStateHandle preserva formulários e etapa. Teste instrumentado
+pickup_flow_rotation_confirmation valida persistência de estado após recreate.
+
+58. PERFORMANCE
+
+Fluxo é síncrono em memória. Sem chamadas de rede, I/O ou serialização. Quotes
+calculadas apenas sob demanda. LazyColumn reutiliza composables.
+
+59. TESTES UNITÁRIOS
+
+Debug:   378 tests, 378 pass, 0 fail, 0 error, 0 skip.
+Staging: 378 tests, 378 pass, 0 fail, 0 error, 0 skip.
+Release: 378 tests, 378 pass, 0 fail, 0 error, 0 skip.
+
+Incluem model tests, validators, entry validator, quote calculator, draft
+factory, repository tests (concorrência, idempotência, conflitos), ViewModel
+tests, mapper tests e arquitectura/privacidade tests.
+
+60. TESTES INSTRUMENTADOS
+
+Código existente: CheckoutEndToEndTest (3 testes), CheckoutHiltSingletonTest,
+CheckoutPresentationTest. Partes 1–3 reportaram 110 testes oficiais, 109 pass,
+1 skip justificado, 0 failures, 0 errors. Nesta Parte 4, não foi possível
+repetir connectedDebugAndroidTest por ausência de dispositivo Android conectado
+("No connected devices!"). O código de teste foi compilado com sucesso.
+
+61. COBERTURA ACUMULADA
+
+A cobertura histórica foi preservada. Nenhum teste existente foi removido.
+Novos testes cobrem o domínio Checkout, repository, ViewModel, mappers e
+arquitectura/privacidade.
+
+62. BUILDS
+
+assembleDebug:   PASS
+assembleStaging: PASS
+assembleRelease: PASS (inclui lintVitalRelease)
+
+63. LINT
+
+./gradlew lintDebug: BUILD SUCCESSFUL, 0 erros.
+
+64. WARNINGS
+
+Total: 34 warnings (baseline esperado).
+
+- UnusedResources (14): cores padrão (purple_*, teal_*, black, white) e strings
+  foundation_ready_*, validate_navigation, navigation_success, institutional_*,
+  snackbar_dismiss. Origem: projeto base/código morto herdado. Risco: baixo.
+  Decisão: não remover nesta fase para evitar churn alheio.
+
+- GradleDependency (9): versões disponíveis de core-ktx, test libraries,
+  lifecycle, activity-compose, compose-bom, navigation, hilt-navigation-compose.
+  Origem: libs.versions.toml herdado. Risco: baixo. Decisão: não actualizar
+  dependências nesta fase.
+
+- NewerVersionAvailable (7): kotlin-android, kotlin-compose, kotlinx-coroutines-test,
+  hilt-android, hilt-compiler. Origem: libs.versions.toml herdado. Risco: baixo.
+  Decisão: manter versões aprovadas.
+
+- AndroidGradlePluginVersion (2): Gradle 8.13 -> 8.14.5; AGP 8.13.2 -> 9.3.0.
+  Origem: gradle-wrapper.properties e libs.versions.toml herdados. Risco: baixo.
+  Decisão: manter.
+
+- RedundantLabel (1): AndroidManifest.xml. Origem: projecto base. Risco: baixo.
+
+- ModifierParameter (1): ConsumaFeedback.kt. Origem: design system herdado.
+  Risco: baixo.
+
+Nenhum warning novo introduzido pela fase Checkout.
+
+65. VALIDAÇÃO MANUAL
+
+Não executada nesta sessão por ausência de dispositivo/emulador. Os testes
+instrumentados das Partes 1–3 cobriram dark theme, font scale, rotação,
+acessibilidade e privacidade.
+
+66. LOGCAT
+
+Não capturado nesta sessão por ausência de dispositivo. Auditoria estática não
+encontrou logs de PII, crash, ANR ou fuga de dados na feature Checkout.
+
+67. FICHEIROS CRIADOS
+
+app/src/main/java/ao/consuma/aqui/feature/checkout/data/CheckoutCapabilitiesProvider.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/data/InMemoryCheckoutRepository.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/data/modules/CheckoutDataModule.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/domain/command/CheckoutCommands.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/domain/model/CheckoutCustomer.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/domain/model/CheckoutDraft.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/domain/model/CheckoutFulfillment.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/domain/model/CheckoutItem.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/domain/model/CheckoutQuote.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/domain/model/CheckoutSession.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/domain/repository/CheckoutRepository.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/domain/result/CheckoutResult.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/domain/service/CheckoutAddressValidator.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/domain/service/CheckoutCustomerValidator.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/domain/service/CheckoutDraftFactory.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/domain/service/CheckoutEntryValidator.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/domain/service/CheckoutFulfillmentValidator.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/domain/service/CheckoutIdentity.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/domain/service/CheckoutQuoteCalculator.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/domain/service/StartCheckout.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/presentation/checkout/CheckoutRoute.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/presentation/checkout/CheckoutScreen.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/presentation/checkout/CheckoutUiEvent.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/presentation/checkout/CheckoutUiState.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/presentation/checkout/CheckoutViewModel.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/presentation/components/CheckoutForms.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/presentation/components/CheckoutStepIndicator.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/presentation/components/CheckoutSummaries.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/presentation/confirmation/CheckoutConfirmationRoute.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/presentation/confirmation/CheckoutConfirmationScreen.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/presentation/mapper/CheckoutUiMapper.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/presentation/mapper/CheckoutUiModels.kt
+app/src/main/java/ao/consuma/aqui/feature/checkout/presentation/mapper/CheckoutUiText.kt
+app/src/test/java/ao/consuma/aqui/feature/checkout/CheckoutArchitecturePrivacyTest.kt
+app/src/test/java/ao/consuma/aqui/feature/checkout/CheckoutTestFixtures.kt
+app/src/test/java/ao/consuma/aqui/feature/checkout/data/CheckoutCapabilitiesProviderTest.kt
+app/src/test/java/ao/consuma/aqui/feature/checkout/data/InMemoryCheckoutRepositoryTest.kt
+app/src/test/java/ao/consuma/aqui/feature/checkout/domain/model/CheckoutModelsTest.kt
+app/src/test/java/ao/consuma/aqui/feature/checkout/domain/service/CheckoutAddressValidatorTest.kt
+app/src/test/java/ao/consuma/aqui/feature/checkout/domain/service/CheckoutCustomerValidatorTest.kt
+app/src/test/java/ao/consuma/aqui/feature/checkout/domain/service/CheckoutDraftFactoryTest.kt
+app/src/test/java/ao/consuma/aqui/feature/checkout/domain/service/CheckoutEntryValidatorTest.kt
+app/src/test/java/ao/consuma/aqui/feature/checkout/domain/service/CheckoutFulfillmentValidatorTest.kt
+app/src/test/java/ao/consuma/aqui/feature/checkout/domain/service/CheckoutQuoteCalculatorTest.kt
+app/src/test/java/ao/consuma/aqui/feature/checkout/presentation/checkout/CheckoutViewModelTest.kt
+app/src/test/java/ao/consuma/aqui/feature/checkout/presentation/mapper/CheckoutUiMapperTest.kt
+app/src/androidTest/java/ao/consuma/aqui/CheckoutEndToEndTest.kt
+app/src/androidTest/java/ao/consuma/aqui/CheckoutHiltSingletonTest.kt
+app/src/androidTest/java/ao/consuma/aqui/CheckoutPresentationTest.kt
+
+68. FICHEIROS ALTERADOS
+
+app/src/androidTest/java/ao/consuma/aqui/CartPresentationTest.kt
+app/src/main/java/ao/consuma/aqui/core/appstate/ConsumaAppState.kt
+app/src/main/java/ao/consuma/aqui/core/navigation/AppDestination.kt
+app/src/main/java/ao/consuma/aqui/core/navigation/AppShellNavigation.kt
+app/src/main/java/ao/consuma/aqui/core/navigation/NavigationTestTags.kt
+app/src/main/java/ao/consuma/aqui/feature/cart/presentation/cart/CartRoute.kt
+app/src/main/java/ao/consuma/aqui/feature/cart/presentation/cart/CartScreen.kt
+app/src/main/java/ao/consuma/aqui/feature/cart/presentation/cart/CartUiEvent.kt
+app/src/main/java/ao/consuma/aqui/feature/cart/presentation/cart/CartViewModel.kt
+app/src/main/java/ao/consuma/aqui/feature/cart/presentation/components/CartComponents.kt
+app/src/main/res/values/strings.xml
+app/src/test/java/ao/consuma/aqui/core/navigation/AppDestinationTest.kt
+app/src/test/java/ao/consuma/aqui/feature/cart/presentation/cart/CartViewModelTest.kt
+
+69. FICHEIRO EXTERNO EXCLUÍDO
+
+"visao sobre mobilidade de cargas e transporte de consumidores consuma"
+não foi alterado, apagado, movido nem incluído em staging/commit.
+Tamanho: 7654 bytes; SHA-256:
+c8cd4ee3c5f38533045a20fc46f27ecb59997cfd9be37b4c801b07b624224e3b.
+
+70. RISCOS
+
+- Fase é inteiramente mock: transição para API exigirá substituição do
+  InMemoryCheckoutRepository e de toda a política mock.
+- Capabilities mock podem divergir da realidade do comerciante na API futura.
+- Quote determinística não reflete distância/logística real.
+- Clock injectável é usado apenas no domínio; UI usa mapper com mesmo Clock.
+- Fase não valida stock, disponibilidade de produtos, descontos nem autoridade
+  financeira (correcto por escopo).
+
+71. PENDÊNCIAS
+
+- Repetir connectedDebugAndroidTest quando um dispositivo/emulador Android
+  estiver disponível.
+- Fase 10 não foi iniciada.
+
+72. PLANO MOCK → API
+
+MANTER:
+- CheckoutRoute, CheckoutScreen, CheckoutViewModel, UiStates, eventos, steps,
+  forms, mappers, domínio Checkout, validators, CheckoutRepository, commands,
+  results, errors, conflicts, quote models, draft, navegação, testes de
+  apresentação.
+
+SUBSTITUIR:
+- InMemoryCheckoutRepository por RemoteCheckoutRepository.
+- CheckoutCapabilitiesProvider por endpoint de capabilities.
+- Política mock de taxa por endpoint de quote real.
+- Clock runtime se necessário para timestamps do servidor.
+
+ADICIONAR:
+- CheckoutApi, DTOs, DTO mappers, error mapper, quote endpoint, server
+  validation, idempotency, timeout, retries, cache apenas se justificado,
+  autenticação futura.
+
+73. MATRIZ MOCK → API
+
+COMPONENTE              ACTUAL                      FUTURO                        MANTÉM  SUBSTITUI  RISCO
+CheckoutRepository      interface                   interface                     SIM     NÃO        baixo
+InMemoryCheckoutRepository  singleton in-memory     RemoteCheckoutRepository      NÃO     SIM        alto
+RemoteCheckoutRepository    não existe              implementação concreta        NÃO     ADICIONA   médio
+CheckoutSession         domain model                domain model + sync version   SIM     parcial    médio
+CheckoutDraft           domain model                domain model                  SIM     NÃO        baixo
+capabilities            mock fixture                endpoint remoto               SIM     SIM        médio
+quote                   mock policy                 endpoint remoto               SIM     SIM        alto
+validators              domain local                domain + server               SIM     parcial    médio
+ViewModel               formulários/estado          formulários/estado            SIM     NÃO        baixo
+forms                   Compose forms               Compose forms                 SIM     NÃO        baixo
+DTOs                    não existem                 classes de rede               NÃO     ADICIONA   médio
+errors                  domain errors               domain + network errors       SIM     parcial    médio
+tests                   unitários/instrumentados    manter + contract tests       SIM     ADICIONA   médio
+
+74. PLANO CHECKOUT → ORDER
+
+Fluxo actual:
+Cart -> CheckoutSession -> Quote -> CheckoutDraft -> Confirmation Mock
+
+Fluxo futuro:
+Cart -> CheckoutSession -> Server Validation -> CheckoutDraft ->
+OrderCreateCommand -> OrderRepository -> Order -> Confirmation Real
+
+MANTER:
+CheckoutDraft, customer, fulfillment, quote, review, validation, conflict
+handling, idempotency preparation, UI principal.
+
+ADICIONAR:
+OrderRepository, Order, OrderLine, OrderStatus, orderId, server timestamps,
+merchant acceptance, order history, timeline.
+
+75. MATRIZ CHECKOUT → ORDER
+
+COMPONENTE              ACTUAL              FUTURO                MANTÉM  ADICIONA  RISCO
+CheckoutDraft           intenção mock       intenção validada     SIM     parcial   médio
+Order                   não existe          entidade real         NÃO     SIM       alto
+OrderRepository         não existe          fonte de pedidos      NÃO     SIM       alto
+OrderLine               não existe          linha do pedido       NÃO     SIM       médio
+OrderStatus             não existe          lifecycle             NÃO     SIM       médio
+customer                CheckoutCustomer    CheckoutCustomer      SIM     NÃO       baixo
+quote                   estimativa          estimativa            SIM     NÃO       baixo
+confirmation            mock                real                  SIM     parcial   alto
+
+76. PLANO CHECKOUT → PAYMENT
+
+Checkout não deve conhecer gateway específico.
+
+Fluxo futuro:
+CheckoutDraft -> Order Draft/Pending Payment -> PaymentRepository ->
+PaymentProviderAdapter -> PaymentIntent -> Confirmation.
+
+MANTER:
+quote, total, customer, merchant, clientReference, conceito de idempotência.
+
+ADICIONAR:
+PaymentRepository, PaymentMethod, PaymentIntent, PaymentStatus, provider
+adapter, webhook, polling, reconciliation.
+
+Não se declara AppyPay como obrigatório.
+
+77. MATRIZ CHECKOUT → PAYMENT
+
+RISCO                   DESCRIÇÃO
+Gateway coupling        Adapter isola Checkout do gateway.
+Duplicate payment       Idempotency key + status polling.
+Stale quote             Revalidar quote antes de criar pagamento.
+Timeout                 Retry exponencial e UI de reconciliação.
+Webhook ordering        Eventos assíncronos reconciliados por estado.
+Idempotency             Mesma key = mesmo PaymentIntent.
+Cancellation            Suporte a cancelamento antes de capture.
+
+78. PLANO CHECKOUT → FULFILLMENT
+
+Pickup:
+- permanece nativo.
+
+Delivery:
+- actualmente mock;
+- futuramente consulta capacidades;
+- pode usar DeliveryRepository;
+- pode escolher parceiro;
+- fallback pode ser Pickup;
+- não acoplar parceiro ao domínio Checkout.
+
+MANTER:
+CheckoutFulfillment, DeliveryAddress, PickupDetails, capabilities, UI de
+escolha.
+
+ADICIONAR:
+FulfillmentRepository, DeliveryProviderAdapter, quote logística, tracking,
+status, cancellation, proof of delivery.
+
+79. MATRIZ CHECKOUT → FULFILLMENT
+
+COMPONENTE              ACTUAL              FUTURO                    MANTÉM  ADICIONA   RISCO
+Pickup                  nativo              nativo                    SIM     NÃO        baixo
+Delivery                mock de dados       logística real            SIM     parcial    alto
+FulfillmentRepository   não existe          orquestra parceiros       NÃO     SIM        alto
+ProviderAdapter         não existe          abstrai parceiro          NÃO     SIM        médio
+Tracking                não existe          status de entrega         NÃO     SIM        médio
+
+80. AUTORIDADE FINANCEIRA
+
+O Android não é autoridade financeira. Antes de criar Order, o backend deve
+revalidar: Cart, merchant, products, options, quantity, availability, stock,
+prices, discounts, charges, currency, quote, fulfillment.
+
+Respostas possíveis: válido, preço alterado, produto indisponível, opção
+removida, taxa alterada, fulfillment indisponível, quote expirada, Cart
+rejeitado. A UI futura deve apresentar reconciliação ao utilizador.
+
+81. ANÁLISE ARQUITECTURAL
+
+Decisões tomadas:
+- Checkout separado de Cart para limitar escopo e responsabilidades.
+- CheckoutDraft distinto de Order para não confundir intenção mock com pedido
+  real.
+- Pickup e Delivery separados para modelar capacidades e custos distintos.
+- Delivery como mock explícito para permitir UI/UX sem depender de logística.
+- CartChanged como conflito explícito porque o carrinho pode mudar durante o
+  preenchimento.
+- QuoteExpired para simular validade temporal de estimativas.
+- Clock injectável para testabilidade de expiração.
+- Confirmação idempotente para evitar duplicação de Draft em cliques múltiplos.
+- Não limpar Cart porque ainda não há pedido real.
+- Não persistir porque a fase é mock e a sessão/draft são transitórios.
+- Não criar Order/Payment porque a fase foca no fluxo de intenção.
+
+Fronteiras:
+- Cart não depende de Checkout.
+- Checkout não cria Order.
+- Checkout não cria Payment.
+- CheckoutDraft não é Order.
+- Quote não é valor confirmado.
+- Delivery mock não é logística real.
+- UI não conhece repository concreto.
+- PII não entra em rotas/logs/tags.
+- Cart não é limpo sem Order real.
+- Servidor futuro revalida tudo.
+- Parceiros de entrega não entram no domínio central.
+- Confirmation mock não representa compra concluída.
+
+Dívida técnica consciente:
+- InMemoryCheckoutRepository será substituído por remote.
+- Capabilities e quote são fixtures.
+- Não há cache, retry nem autenticação.
+
+Critérios para fase 10:
+- Acordo sobre backend API real ou fase de integração híbrida.
+- Definição de Order, Payment e fulfillment mínimo viável.
+- Contrato de quote e capabilities.
+- Estratégia de idempotência e reconciliação.
+
+82. ESTADO DO WORKTREE
+
+Antes do staging: alterações não commitadas da fase Checkout, ficheiro externo
+não rastreado preservado. git diff --check: sem erros de whitespace.
+
+83. CONFIRMAÇÃO DE ESCOPO
+
+- Checkout possui domínio próprio: SIM.
+- CheckoutRepository é fonte única da sessão: SIM.
+- InMemoryCheckoutRepository é singleton: SIM.
+- MutableStateFlow privado e StateFlow público: SIM.
+- Mutações usam Mutex: SIM.
+- CartRepository continua fonte única do Cart: SIM.
+- Dependência Checkout → Cart unidireccional: SIM.
+- CheckoutSession distinto de Cart: SIM.
+- CheckoutDraft distinto de Order: SIM.
+- Quote é estimativa: SIM.
+- Confirmation não cria pedido/pagamento: SIM.
+- Cart não é limpo: SIM.
+- CartChanged bloqueia confirmação: SIM.
+- QuoteExpired bloqueia confirmação: SIM.
+- Confirmação dupla não duplica Draft: SIM.
+- Reset limpa sessão/draft e preserva Cart: SIM.
+- PII não entra em rotas/tags/logs: SIM.
+- Checkout não é persistido: SIM.
+- Pickup sem taxa: SIM.
+- Delivery explicitamente mock: SIM.
+- Não existe tracking/mapa/geocoding: SIM.
+- Não existe OrderRepository/PaymentRepository: SIM.
+- Bottom Navigation oculta em Checkout: SIM.
+- AppShell único: SIM.
+- Checkout em Release: SIM.
+- Ferramentas dev protegidas: SIM.
+- Nenhuma dependência/SDK alterado: SIM.
+- Cobertura histórica preservada: SIM.
+- Ficheiro externo fora dos commits: SIM.
+
+84. COMMITS
+
+Commit funcional: feat(android): implement checkout flow mock
+Commit documental: docs(android): document checkout flow mock
+
+85. PUSH
+
+git push -u origin android/checkout-flow-mock-001
+
+86. NOTAS FINAIS
+
+A fase 10 não foi iniciada. Não foram criados Order, pagamento, backend,
+entrega real ou persistência.
