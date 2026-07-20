@@ -67,7 +67,22 @@ class CartPresentationTest {
             hasTestTag(NavigationTestTags.CART_SUBTOTAL)
         )
         composeTestRule.onNodeWithTag(NavigationTestTags.CART_SUBTOTAL).assertIsDisplayed()
-        composeTestRule.onNodeWithText("A finalização será implementada na próxima fase.").assertIsDisplayed()
+        composeTestRule.onNodeWithText("O Checkout seguinte prepara apenas uma intenção simulada.")
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithTag(NavigationTestTags.CART_CONTINUE).performClick()
+        assertTrue(events.contains(CartUiEvent.StartCheckout))
+    }
+
+    @Test fun empty_cart_does_not_show_checkout_cta() {
+        composeTestRule.setContent {
+            ConsumaAquiTheme {
+                CartScreen(
+                    CartUiState.Empty(CartUiText.Resource(R.string.cart_empty_description)),
+                    {}, {}
+                )
+            }
+        }
+        composeTestRule.onNodeWithTag(NavigationTestTags.CART_CONTINUE).assertDoesNotExist()
     }
 
     @Test fun destructive_confirmations_are_contextual() {

@@ -29,6 +29,8 @@ sealed class AppDestination(val route: String) {
     data object Catalog : AppDestination("merchant/{merchantId}/catalog")
     data object ProductDetail : AppDestination("merchant/{merchantId}/catalog/product/{productId}?cartItemId={cartItemId}")
     data object Cart : AppDestination("cart")
+    data object Checkout : AppDestination("checkout")
+    data object CheckoutConfirmation : AppDestination("checkout/confirmation")
     data object DesignSystemCatalog : AppDestination("design_system_catalog")
 
     companion object {
@@ -52,6 +54,8 @@ sealed class AppDestination(val route: String) {
                 Catalog,
                 ProductDetail,
                 Cart,
+                Checkout,
+                CheckoutConfirmation,
                 DesignSystemCatalog
             )
 

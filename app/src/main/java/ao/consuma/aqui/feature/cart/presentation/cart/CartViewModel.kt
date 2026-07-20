@@ -62,6 +62,9 @@ class CartViewModel @Inject constructor(
             CartUiEvent.ContinueShopping -> repository.cart.value.merchant?.id?.let {
                 _effects.tryEmit(CartUiEffect.ContinueShopping(it))
             }
+            CartUiEvent.StartCheckout -> if (repository.cart.value.items.isNotEmpty()) {
+                _effects.tryEmit(CartUiEffect.OpenCheckout)
+            }
         }
     }
 

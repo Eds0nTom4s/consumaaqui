@@ -23,6 +23,8 @@ class AppDestinationTest {
         assertFalse(AppDestination.Catalog.isTopLevel())
         assertFalse(AppDestination.ProductDetail.isTopLevel())
         assertFalse(AppDestination.Cart.isTopLevel())
+        assertFalse(AppDestination.Checkout.isTopLevel())
+        assertFalse(AppDestination.CheckoutConfirmation.isTopLevel())
         assertFalse(AppDestination.DesignSystemCatalog.isTopLevel())
     }
 
@@ -62,14 +64,24 @@ class AppDestinationTest {
     }
 
     @Test
-    fun `cart is secondary and checkout destination is absent`() {
-        assertTrue(AppDestination.all.none { destination ->
-            destination.route.contains("checkout", ignoreCase = true)
-        })
+    fun `cart and prepared checkout destination are secondary`() {
         assertTrue(AppDestination.Cart in AppDestination.all)
+        assertTrue(AppDestination.Checkout in AppDestination.all)
+        assertTrue(AppDestination.CheckoutConfirmation in AppDestination.all)
+        assertEquals("checkout", AppDestination.Checkout.route)
+        assertEquals("checkout/confirmation", AppDestination.CheckoutConfirmation.route)
         assertFalse(AppDestination.Catalog.isTopLevel())
         assertFalse(AppDestination.ProductDetail.isTopLevel())
         assertFalse(AppDestination.Cart.isTopLevel())
+        assertFalse(AppDestination.Checkout.isTopLevel())
+        assertFalse(AppDestination.CheckoutConfirmation.isTopLevel())
+    }
+
+    @Test fun `checkout routes carry no cart session quote or draft arguments`() {
+        listOf(AppDestination.Checkout, AppDestination.CheckoutConfirmation).forEach { destination ->
+            assertFalse(destination.route.contains("{"))
+            assertFalse(destination.route.contains("?"))
+        }
     }
 
 }

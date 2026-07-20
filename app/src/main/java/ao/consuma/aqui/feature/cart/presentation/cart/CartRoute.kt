@@ -13,6 +13,7 @@ fun CartRoute(
     onNavigateBack: () -> Unit,
     onExploreMerchants: () -> Unit,
     onContinueShopping: (String) -> Unit,
+    onNavigateToCheckout: () -> Unit,
     onEditItem: (String, String, String) -> Unit,
     onShowMessage: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -26,6 +27,7 @@ fun CartRoute(
                 is CartUiEffect.EditItem -> onEditItem(effect.merchantId, effect.productId, effect.cartItemId)
                 is CartUiEffect.ContinueShopping -> onContinueShopping(effect.merchantId)
                 CartUiEffect.ExploreMerchants -> onExploreMerchants()
+                CartUiEffect.OpenCheckout -> onNavigateToCheckout()
                 is CartUiEffect.Message -> onShowMessage(when (val text = effect.text) {
                     is ao.consuma.aqui.feature.cart.presentation.mapper.CartUiText.Resource ->
                         context.getString(text.id, *text.args.toTypedArray())

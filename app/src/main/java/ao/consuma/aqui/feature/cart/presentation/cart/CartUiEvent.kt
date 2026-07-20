@@ -15,6 +15,7 @@ sealed interface CartUiEvent {
     data object CancelClearCart : CartUiEvent
     data object ExploreMerchants : CartUiEvent
     data object ContinueShopping : CartUiEvent
+    data object StartCheckout : CartUiEvent
     data object Retry : CartUiEvent
 }
 
@@ -22,5 +23,6 @@ sealed interface CartUiEffect {
     data class EditItem(val merchantId: String, val productId: String, val cartItemId: String) : CartUiEffect
     data class ContinueShopping(val merchantId: String) : CartUiEffect
     data object ExploreMerchants : CartUiEffect
+    data object OpenCheckout : CartUiEffect
     data class Message(val text: CartUiText) : CartUiEffect
 }

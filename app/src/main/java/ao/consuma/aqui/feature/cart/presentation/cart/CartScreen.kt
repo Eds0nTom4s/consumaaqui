@@ -103,9 +103,16 @@ private fun CartContent(state: CartUiState.Content, onEvent: (CartUiEvent) -> Un
         item("summary") { CartSummaryCard(state.itemCount, state.distinctItemCount, state.subtotalText) }
         item("continue") {
             ConsumaPrimaryButton(
+                stringResource(R.string.cart_continue_checkout),
+                { onEvent(CartUiEvent.StartCheckout) },
+                Modifier.testTag(NavigationTestTags.CART_CONTINUE),
+                enabled = !state.isMutating
+            )
+        }
+        item("continue_shopping") {
+            ConsumaTextButton(
                 stringResource(R.string.cart_continue_shopping),
                 { onEvent(CartUiEvent.ContinueShopping) },
-                Modifier.testTag(NavigationTestTags.CART_CONTINUE),
                 enabled = !state.isMutating
             )
         }

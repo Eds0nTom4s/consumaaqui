@@ -113,7 +113,7 @@ class CartViewModelTest {
         assertFalse((viewModel.uiState.value as CartUiState.Content).items.single().canIncrease)
     }
 
-    @Test fun `edit continue and explore emit identifiers instead of cart models`() = runTest {
+    @Test fun `edit continue checkout and explore emit navigation effects without cart models`() = runTest {
         val repository = repository()
         repository.addItem(addCommand())
         val viewModel = CartViewModel(repository, CartUiMapper())
@@ -123,11 +123,21 @@ class CartViewModelTest {
 
         viewModel.onEvent(CartUiEvent.EditItem(item.id))
         viewModel.onEvent(CartUiEvent.ContinueShopping)
+        viewModel.onEvent(CartUiEvent.StartCheckout)
         viewModel.onEvent(CartUiEvent.ExploreMerchants)
 
         assertEquals(CartUiEffect.EditItem(item.merchantId, item.productId, item.id), effects[0])
         assertEquals(CartUiEffect.ContinueShopping(item.merchantId), effects[1])
-        assertEquals(CartUiEffect.ExploreMerchants, effects[2])
+        assertEquals(CartUiEffect.OpenCheckout, effects[2])
+        assertEquals(CartUiEffect.ExploreMerchants, effects[3])
+    }
+
+    @Test fun `empty cart cannot emit checkout navigation`() = runTest {
+        val viewModel = CartViewModel(repository(), CartUiMapper())
+        val effects = mutableListOf<CartUiEffect>()
+        backgroundScope.launch(dispatcher) { viewModel.effects.collect { effects += it } }
+        viewModel.onEvent(CartUiEvent.StartCheckout)
+        assertTrue(effects.isEmpty())
     }
 
     @Test fun `mutation keeps content visible and blocks duplicate events`() = runTest {

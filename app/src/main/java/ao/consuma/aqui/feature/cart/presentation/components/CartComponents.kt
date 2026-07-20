@@ -159,7 +159,7 @@ fun CartSummaryCard(itemCount: Int, distinctCount: Int, subtotal: String, modifi
             SummaryRow(stringResource(R.string.cart_distinct_items), distinctCount.toString())
             SummaryRow(stringResource(R.string.cart_estimated_subtotal), subtotal)
             Text(stringResource(R.string.cart_price_notice), style = MaterialTheme.typography.bodySmall)
-            Text(stringResource(R.string.cart_checkout_future), style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.cart_checkout_available), style = MaterialTheme.typography.bodySmall)
         }
     }
 }
