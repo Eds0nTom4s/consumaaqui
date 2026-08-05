@@ -4,6 +4,8 @@ import androidx.lifecycle.SavedStateHandle
 import ao.consuma.aqui.feature.discovery.data.InMemoryDiscoveryRepository
 import ao.consuma.aqui.feature.discovery.data.MockDiscoveryScenario
 import ao.consuma.aqui.feature.discovery.domain.model.*
+import ao.consuma.aqui.feature.discovery.domain.capability.DiscoverySource
+import ao.consuma.aqui.feature.discovery.domain.capability.DiscoverySourcePolicy
 import ao.consuma.aqui.feature.discovery.domain.repository.DiscoveryRepository
 import ao.consuma.aqui.feature.discovery.domain.request.*
 import ao.consuma.aqui.feature.discovery.domain.result.DiscoveryResult
@@ -22,6 +24,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.flow.MutableStateFlow
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SearchViewModelTest {
@@ -74,6 +77,31 @@ class SearchViewModelTest {
         assertEquals(DiscoveryOrderBy.NAME, restoredRepository.lastSearchRequest.orderBy)
     }
     @Test fun `without location defaults to featured and disables nearest`() { viewModel.onEvent(SearchUiEvent.Load); val state = viewModel.uiState.value as SearchUiState.Content; assertEquals(DiscoveryOrderBy.FEATURED, state.data.criteria.orderBy); assertFalse(state.data.criteria.sortOptions.first { it.value == DiscoveryOrderBy.NEAREST }.enabled) }
+    @Test fun `remote capabilities expose only name and ignore unsupported filter events`() {
+        val remotePolicy = object : DiscoverySourcePolicy {
+            override val source = MutableStateFlow(DiscoverySource.REMOTE)
+            override val selectable = false
+            override fun select(source: DiscoverySource) = false
+        }
+        val remoteViewModel = SearchViewModel(
+            repository,
+            launchRepository,
+            DiscoveryUiMapper(),
+            SavedStateHandle(),
+            UnconfinedTestDispatcher(),
+            remotePolicy
+        )
+        remoteViewModel.onEvent(SearchUiEvent.Load)
+        remoteViewModel.onEvent(SearchUiEvent.OpenNowChanged(true))
+        remoteViewModel.onEvent(SearchUiEvent.FulfillmentToggled(FulfillmentOption.PICKUP))
+        val criteria = (remoteViewModel.uiState.value as SearchUiState.Content).data.criteria
+        assertEquals(listOf(DiscoveryOrderBy.NAME), criteria.sortOptions.map { it.value })
+        assertEquals(DiscoveryOrderBy.NAME, repository.lastSearchRequest.orderBy)
+        assertFalse(repository.lastSearchRequest.onlyOpen)
+        assertTrue(repository.lastSearchRequest.fulfillmentOptions.isEmpty())
+        assertFalse(criteria.supportsOnlyOpen)
+        assertFalse(criteria.supportsFulfillmentFilter)
+    }
     @Test fun `clear filters preserves query and sort`() { viewModel.onEvent(SearchUiEvent.QueryChanged("café")); viewModel.onEvent(SearchUiEvent.OpenNowChanged(true)); viewModel.onEvent(SearchUiEvent.SortSelected(DiscoveryOrderBy.NAME)); viewModel.onEvent(SearchUiEvent.ClearFilters); assertEquals("café", repository.lastSearchRequest.query); assertEquals(DiscoveryOrderBy.NAME, repository.lastSearchRequest.orderBy); assertFalse(repository.lastSearchRequest.onlyOpen) }
     @Test fun `fulfillment toggle removes an already selected option and keeps other options`() {
         viewModel.onEvent(SearchUiEvent.FulfillmentToggled(FulfillmentOption.DELIVERY))
@@ -105,6 +133,17 @@ class SearchViewModelTest {
         assertEquals(calls + 2, repository.searchRequests.size)
         assertEquals(expected, repository.lastSearchRequest)
         assertFalse((viewModel.uiState.value as SearchUiState.Content).data.isRefreshing)
+    }
+
+    @Test fun `next page is requested centrally and empty end preserves current results`() {
+        viewModel.onEvent(SearchUiEvent.Load)
+        val first = (viewModel.uiState.value as SearchUiState.Content).data.merchants
+        viewModel.onEvent(SearchUiEvent.LoadNextPage)
+        assertEquals(2, repository.lastSearchRequest.page)
+        val ended = (viewModel.uiState.value as SearchUiState.Content).data
+        assertEquals(first, ended.merchants)
+        assertFalse(ended.hasMore)
+        assertFalse(ended.isLoadingMore)
     }
 
     @Test fun `selected location enables nearest and enters request`() {
