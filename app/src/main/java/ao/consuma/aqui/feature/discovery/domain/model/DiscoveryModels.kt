@@ -48,7 +48,8 @@ data class MerchantSummary(
     val popularity: Int,
     val minimumOrderAmount: MoneyAmount?,
     val promotion: PromotionSummary?,
-    val isFeatured: Boolean
+    val isFeatured: Boolean,
+    val catalogAvailable: Boolean
 )
 
 data class MerchantSection(val items: List<MerchantSummary>, val hasMore: Boolean)

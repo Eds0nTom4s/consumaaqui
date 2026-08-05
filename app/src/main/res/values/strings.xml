@@ -92,6 +92,8 @@
     <string name="search_category_title">Categoria</string>
     <string name="search_nearest_requires_location">Seleccione uma localização para ordenar por proximidade.</string>
     <string name="search_refreshing">A actualizar comerciantes…</string>
+    <string name="search_load_more">Carregar mais</string>
+    <string name="search_loading_more">A carregar…</string>
     <string name="search_explore_title">Explore comerciantes</string>
     <string name="search_results_title">Resultados da pesquisa</string>
     <string name="search_empty_query_description">Nenhum comerciante encontrado para esta pesquisa.</string>
@@ -120,6 +122,9 @@
     <string name="more_developer_tools_title">Ferramentas de desenvolvimento</string>
     <string name="more_design_system">Design System</string>
     <string name="more_build_info">Informações da build</string>
+    <string name="more_discovery_source">Fonte de dados Discovery</string>
+    <string name="more_discovery_mock">Mock</string>
+    <string name="more_discovery_remote">Remote</string>
 
     <!-- Settings -->
     <string name="settings_title">Definições</string>

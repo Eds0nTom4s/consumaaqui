@@ -18,7 +18,9 @@ data class SearchCriteriaUiState(
     val orderBy: DiscoveryOrderBy = DiscoveryOrderBy.FEATURED,
     val categories: List<CategoryUiModel> = emptyList(),
     val sortOptions: List<SearchSortOptionUiModel> = emptyList(),
-    val hasLocation: Boolean = false
+    val hasLocation: Boolean = false,
+    val supportsOnlyOpen: Boolean = true,
+    val supportsFulfillmentFilter: Boolean = true
 )
 
 data class SearchResultsUiModel(
@@ -27,7 +29,9 @@ data class SearchResultsUiModel(
     val totalResults: Int,
     val resultContext: UiText,
     val isRefreshing: Boolean,
-    val isExplorationMode: Boolean
+    val isExplorationMode: Boolean,
+    val hasMore: Boolean = false,
+    val isLoadingMore: Boolean = false
 )
 
 sealed interface SearchUiState {

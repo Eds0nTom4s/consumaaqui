@@ -48,7 +48,10 @@ open class DiscoveryUiMapper @Inject constructor() {
         catalogAvailable = value.catalogAvailable
     )
 
-    fun sortOptions(hasLocation: Boolean): List<SearchSortOptionUiModel> = DiscoveryOrderBy.entries.map {
+    fun sortOptions(
+        hasLocation: Boolean,
+        supportedSorts: Set<DiscoveryOrderBy> = DiscoveryOrderBy.entries.toSet()
+    ): List<SearchSortOptionUiModel> = DiscoveryOrderBy.entries.filter { it in supportedSorts }.map {
         SearchSortOptionUiModel(it, sortLabel(it), enabled = hasLocation || it != DiscoveryOrderBy.NEAREST)
     }
 

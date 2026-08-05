@@ -2,6 +2,7 @@ package ao.consuma.aqui.feature.more
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -26,10 +27,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import ao.consuma.aqui.BuildConfig
 import ao.consuma.aqui.R
 import ao.consuma.aqui.core.designsystem.components.ConsumaClickableCard
+import ao.consuma.aqui.core.designsystem.components.ConsumaFilterChip
 import ao.consuma.aqui.core.designsystem.components.ConsumaTopAppBar
 import ao.consuma.aqui.core.designsystem.theme.ConsumaAquiTheme
 import ao.consuma.aqui.core.designsystem.tokens.ConsumaSpacing
 import ao.consuma.aqui.core.navigation.NavigationTestTags
+import ao.consuma.aqui.feature.discovery.domain.capability.DiscoverySource
 
 @Composable
 fun MoreScreen(
@@ -39,6 +42,9 @@ fun MoreScreen(
     onNavigateToLocationSettings: () -> Unit,
     onNavigateToDesignSystem: (() -> Unit)?,
     isDesignSystemCatalogEnabled: Boolean,
+    discoverySourceSelectable: Boolean = false,
+    discoverySource: DiscoverySource = DiscoverySource.REMOTE,
+    onDiscoverySourceSelected: (DiscoverySource) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -121,6 +127,21 @@ fun MoreScreen(
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.primary
                 )
+                if (discoverySourceSelectable) {
+                    Text(stringResource(R.string.more_discovery_source), style = MaterialTheme.typography.bodyMedium)
+                    Row(horizontalArrangement = Arrangement.spacedBy(ConsumaSpacing.sm)) {
+                        DiscoverySource.entries.forEach { source ->
+                            ConsumaFilterChip(
+                                selected = discoverySource == source,
+                                onClick = { onDiscoverySourceSelected(source) },
+                                label = stringResource(
+                                    if (source == DiscoverySource.MOCK) R.string.more_discovery_mock
+                                    else R.string.more_discovery_remote
+                                )
+                            )
+                        }
+                    }
+                }
                 if (onNavigateToDesignSystem != null) {
                     ConsumaClickableCard(
                         onClick = onNavigateToDesignSystem,

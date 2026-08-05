@@ -155,7 +155,9 @@ private fun SearchBody(
                         )
                     }
                 }
-                if (!criteria.hasLocation) Text(stringResource(R.string.search_nearest_requires_location), style = MaterialTheme.typography.bodySmall)
+                if (!criteria.hasLocation && criteria.sortOptions.any { it.value == DiscoveryOrderBy.NEAREST }) {
+                    Text(stringResource(R.string.search_nearest_requires_location), style = MaterialTheme.typography.bodySmall)
+                }
             }
         }
         if (data.isRefreshing) item("refreshing") { Text(stringResource(R.string.search_refreshing), Modifier.testTag(NavigationTestTags.SEARCH_REFRESHING)) }
@@ -174,6 +176,13 @@ private fun SearchBody(
                     "${NavigationTestTags.SEARCH_MERCHANT}_${merchant.id}"
                 )
             }
+            if (data.hasMore || data.isLoadingMore) item("load-more") {
+                ConsumaTextButton(
+                    text = stringResource(if (data.isLoadingMore) R.string.search_loading_more else R.string.search_load_more),
+                    onClick = { onEvent(SearchUiEvent.LoadNextPage) },
+                    enabled = !data.isLoadingMore
+                )
+            }
         }
     }
 }
@@ -185,7 +194,7 @@ private fun QuickFilters(criteria: SearchCriteriaUiState, onEvent: (SearchUiEven
             val selected = criteria.filters.activeCount == 0
             ConsumaFilterChip(selected, { onEvent(SearchUiEvent.ClearFilters) }, stringResource(R.string.search_filter_all), Modifier.announcedSelection(selected))
         }
-        item {
+        if (criteria.supportsOnlyOpen) item {
             val selected = criteria.filters.onlyOpen
             ConsumaFilterChip(
                 selected,
@@ -194,9 +203,11 @@ private fun QuickFilters(criteria: SearchCriteriaUiState, onEvent: (SearchUiEven
                 Modifier.testTag(NavigationTestTags.SEARCH_OPEN_NOW).announcedSelection(selected)
             )
         }
-        item { FulfillmentChip(FulfillmentOption.DELIVERY, criteria, onEvent, R.string.search_filter_delivery) }
-        item { FulfillmentChip(FulfillmentOption.PICKUP, criteria, onEvent, R.string.search_filter_pickup) }
-        item { FulfillmentChip(FulfillmentOption.SERVICE, criteria, onEvent, R.string.search_filter_service) }
+        if (criteria.supportsFulfillmentFilter) {
+            item { FulfillmentChip(FulfillmentOption.DELIVERY, criteria, onEvent, R.string.search_filter_delivery) }
+            item { FulfillmentChip(FulfillmentOption.PICKUP, criteria, onEvent, R.string.search_filter_pickup) }
+            item { FulfillmentChip(FulfillmentOption.SERVICE, criteria, onEvent, R.string.search_filter_service) }
+        }
     }
 }
 

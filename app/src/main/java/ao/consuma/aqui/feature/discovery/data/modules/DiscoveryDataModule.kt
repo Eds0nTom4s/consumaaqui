@@ -1,6 +1,6 @@
 package ao.consuma.aqui.feature.discovery.data.modules
 
-import ao.consuma.aqui.feature.discovery.data.InMemoryDiscoveryRepository
+import ao.consuma.aqui.feature.discovery.data.SelectableDiscoveryRepository
 import ao.consuma.aqui.feature.discovery.domain.repository.DiscoveryRepository
 import dagger.Binds
 import dagger.Module
@@ -13,5 +13,5 @@ import javax.inject.Singleton
 abstract class DiscoveryDataModule {
     @Binds
     @Singleton
-    abstract fun bindDiscoveryRepository(implementation: InMemoryDiscoveryRepository): DiscoveryRepository
+    abstract fun bindDiscoveryRepository(implementation: SelectableDiscoveryRepository): DiscoveryRepository
 }

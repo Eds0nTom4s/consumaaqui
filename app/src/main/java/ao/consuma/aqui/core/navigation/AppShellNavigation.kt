@@ -1,6 +1,8 @@
 package ao.consuma.aqui.core.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
@@ -11,6 +13,7 @@ import androidx.navigation.navArgument
 import ao.consuma.aqui.core.appstate.ConsumaAppState
 import ao.consuma.aqui.feature.about.AboutScreen
 import ao.consuma.aqui.feature.developer.DesignSystemCatalogScreen
+import ao.consuma.aqui.feature.developer.DiscoverySourceViewModel
 import ao.consuma.aqui.feature.help.HelpScreen
 import ao.consuma.aqui.feature.home.presentation.HomeRoute
 import ao.consuma.aqui.feature.discovery.presentation.merchant.MerchantOverviewRoute
@@ -27,6 +30,7 @@ import ao.consuma.aqui.feature.more.MoreScreen
 import ao.consuma.aqui.feature.orders.OrdersScreen
 import ao.consuma.aqui.feature.search.SearchRoute
 import ao.consuma.aqui.feature.settings.SettingsScreen
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun AppShellNavigation(
@@ -70,6 +74,8 @@ fun AppShellNavigation(
             )
         }
         composable(AppDestination.More.route) {
+            val discoverySourceViewModel: DiscoverySourceViewModel = hiltViewModel()
+            val discoverySource by discoverySourceViewModel.source.collectAsStateWithLifecycle()
             MoreScreen(
                 onNavigateToSettings = { appState.navigateTo(AppDestination.Settings) },
                 onNavigateToHelp = { appState.navigateTo(AppDestination.Help) },
@@ -78,7 +84,10 @@ fun AppShellNavigation(
                 onNavigateToDesignSystem = if (isDesignSystemCatalogEnabled) {
                     { appState.navigateTo(AppDestination.DesignSystemCatalog) }
                 } else null,
-                isDesignSystemCatalogEnabled = isDesignSystemCatalogEnabled
+                isDesignSystemCatalogEnabled = isDesignSystemCatalogEnabled,
+                discoverySourceSelectable = discoverySourceViewModel.selectable,
+                discoverySource = discoverySource,
+                onDiscoverySourceSelected = discoverySourceViewModel::select
             )
         }
         composable(AppDestination.Settings.route) {

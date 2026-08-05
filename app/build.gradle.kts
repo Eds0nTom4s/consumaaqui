@@ -4,7 +4,15 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt.android)
+    alias(libs.plugins.kotlin.serialization)
 }
+
+fun quotedBuildConfig(value: String): String =
+    "\"${value.replace("\\", "\\\\").replace("\"", "\\\"")}\""
+
+val debugDiscoveryBaseUrl = providers.gradleProperty("DISCOVERY_DEBUG_BASE_URL").orElse("")
+val stagingDiscoveryBaseUrl = providers.gradleProperty("DISCOVERY_STAGING_BASE_URL").orElse("")
+val releaseDiscoveryBaseUrl = providers.gradleProperty("DISCOVERY_RELEASE_BASE_URL").orElse("")
 
 android {
     namespace = "ao.consuma.aqui"
@@ -25,10 +33,16 @@ android {
     buildTypes {
         debug {
             buildConfigField("String", "ENVIRONMENT", "\"DEBUG\"")
+            buildConfigField("String", "DISCOVERY_BASE_URL", quotedBuildConfig(debugDiscoveryBaseUrl.get()))
+            buildConfigField("String", "DISCOVERY_SOURCE", "\"MOCK\"")
+            buildConfigField("boolean", "DISCOVERY_SOURCE_SELECTABLE", "true")
         }
         create("staging") {
             initWith(getByName("debug"))
             buildConfigField("String", "ENVIRONMENT", "\"STAGING\"")
+            buildConfigField("String", "DISCOVERY_BASE_URL", quotedBuildConfig(stagingDiscoveryBaseUrl.get()))
+            buildConfigField("String", "DISCOVERY_SOURCE", "\"REMOTE\"")
+            buildConfigField("boolean", "DISCOVERY_SOURCE_SELECTABLE", "false")
             matchingFallbacks += listOf("debug")
         }
         release {
@@ -38,6 +52,9 @@ android {
                 "proguard-rules.pro"
             )
             buildConfigField("String", "ENVIRONMENT", "\"RELEASE\"")
+            buildConfigField("String", "DISCOVERY_BASE_URL", quotedBuildConfig(releaseDiscoveryBaseUrl.get()))
+            buildConfigField("String", "DISCOVERY_SOURCE", "\"REMOTE\"")
+            buildConfigField("boolean", "DISCOVERY_SOURCE_SELECTABLE", "false")
         }
     }
     compileOptions {
@@ -67,8 +84,13 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.retrofit.core)
+    implementation(libs.retrofit.kotlinx.serialization)
+    implementation(libs.okhttp.core)
+    implementation(libs.kotlinx.serialization.json)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.okhttp.mockwebserver)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

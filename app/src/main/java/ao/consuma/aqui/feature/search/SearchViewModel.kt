@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ao.consuma.aqui.R
 import ao.consuma.aqui.feature.discovery.domain.model.*
+import ao.consuma.aqui.feature.discovery.domain.capability.DiscoverySourcePolicy
+import ao.consuma.aqui.feature.discovery.domain.capability.MockDiscoverySourcePolicy
 import ao.consuma.aqui.feature.discovery.domain.repository.DiscoveryRepository
 import ao.consuma.aqui.feature.discovery.domain.request.DiscoverySearchRequest
 import ao.consuma.aqui.feature.discovery.domain.result.DiscoveryError
@@ -38,7 +40,8 @@ class SearchViewModel @Inject constructor(
     private val launchStateRepository: AppLaunchStateRepository,
     private val mapper: DiscoveryUiMapper,
     private val savedStateHandle: SavedStateHandle,
-    @DiscoveryDispatcher private val dispatcher: CoroutineDispatcher
+    @DiscoveryDispatcher private val dispatcher: CoroutineDispatcher,
+    private val sourcePolicy: DiscoverySourcePolicy = MockDiscoverySourcePolicy
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<SearchUiState>(SearchUiState.Loading)
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
@@ -58,6 +61,7 @@ class SearchViewModel @Inject constructor(
     private var lastCategories: List<MerchantCategory> = emptyList()
     private var lastLocationPreference: LocationPreference? = null
     private var loadJob: Job? = null
+    private var currentPage = 1
 
     fun onLocationChanged(preference: LocationPreference) {
         if (lastLocationPreference == preference && _uiState.value !is SearchUiState.Loading) return
@@ -70,63 +74,89 @@ class SearchViewModel @Inject constructor(
             SearchUiEvent.Load -> load(initial = _uiState.value is SearchUiState.Loading)
             SearchUiEvent.Retry -> load(initial = true)
             SearchUiEvent.Refresh -> load(refreshing = true)
+            SearchUiEvent.LoadNextPage -> load(append = true)
             // Clear keeps query and the user's sort choice; only filtering dimensions are reset.
             SearchUiEvent.ClearFilters -> { categoryId = null; onlyOpen = false; fulfillmentOptions = emptySet(); persist(); load() }
             SearchUiEvent.ClearQuery -> { query = ""; persist(); load() }
             is SearchUiEvent.QueryChanged -> { query = event.value; persist(); load() }
             is SearchUiEvent.CategorySelected -> { categoryId = event.id; persist(); load() }
-            is SearchUiEvent.OpenNowChanged -> { onlyOpen = event.enabled; persist(); load() }
-            is SearchUiEvent.FulfillmentToggled -> {
-                fulfillmentOptions = if (event.value in fulfillmentOptions) fulfillmentOptions - event.value else fulfillmentOptions + event.value
-                persist(); load()
+            is SearchUiEvent.OpenNowChanged -> if (sourcePolicy.capabilities.supportsOnlyOpen) {
+                onlyOpen = event.enabled; persist(); load()
             }
-            is SearchUiEvent.SortSelected -> { if (event.value != DiscoveryOrderBy.NEAREST || hasLocation()) { orderBy = event.value; persist(); load() } }
+            is SearchUiEvent.FulfillmentToggled -> {
+                if (sourcePolicy.capabilities.supportsFulfillmentFilter) {
+                    fulfillmentOptions = if (event.value in fulfillmentOptions) fulfillmentOptions - event.value else fulfillmentOptions + event.value
+                    persist(); load()
+                }
+            }
+            is SearchUiEvent.SortSelected -> {
+                if (event.value in sourcePolicy.capabilities.supportedSorts &&
+                    (event.value != DiscoveryOrderBy.NEAREST || hasLocation())) {
+                    orderBy = event.value; persist(); load()
+                }
+            }
             is SearchUiEvent.MerchantSelected -> onMerchantSelected(event.merchantId)
         }
     }
 
-    private fun load(initial: Boolean = false, refreshing: Boolean = false) {
+    private fun load(initial: Boolean = false, refreshing: Boolean = false, append: Boolean = false) {
         val location = currentLocation()
+        val capabilities = sourcePolicy.capabilities
+        if (!capabilities.supportsOnlyOpen) onlyOpen = false
+        if (!capabilities.supportsFulfillmentFilter) fulfillmentOptions = emptySet()
         if (!defaultSortResolved) {
-            orderBy = if (location == null) DiscoveryOrderBy.FEATURED else DiscoveryOrderBy.NEAREST
+            orderBy = when {
+                DiscoveryOrderBy.NEAREST in capabilities.supportedSorts && location != null -> DiscoveryOrderBy.NEAREST
+                DiscoveryOrderBy.FEATURED in capabilities.supportedSorts -> DiscoveryOrderBy.FEATURED
+                else -> DiscoveryOrderBy.NAME
+            }
             defaultSortResolved = true
             persist()
-        } else if (location == null && orderBy == DiscoveryOrderBy.NEAREST) {
-            orderBy = DiscoveryOrderBy.FEATURED
+        } else if (orderBy !in capabilities.supportedSorts || (location == null && orderBy == DiscoveryOrderBy.NEAREST)) {
+            orderBy = if (DiscoveryOrderBy.FEATURED in capabilities.supportedSorts) DiscoveryOrderBy.FEATURED else DiscoveryOrderBy.NAME
             persist()
         }
         if (initial) _uiState.value = SearchUiState.Loading
         if (refreshing) markRefreshing()
+        if (append) markLoadingMore()
+        val requestedPage = if (append) currentPage + 1 else 1
         val request = DiscoverySearchRequest(
             query = query,
             categoryId = categoryId,
             onlyOpen = onlyOpen,
             fulfillmentOptions = fulfillmentOptions,
             orderBy = orderBy,
+            page = requestedPage,
             location = location
         )
         loadJob?.cancel()
         loadJob = viewModelScope.launch(dispatcher) {
             when (val result = repository.search(request)) {
-                is DiscoveryResult.Success -> show(result.data, location != null, offline = false)
-                is DiscoveryResult.Offline -> result.cachedData?.let { show(it, location != null, offline = true) }
+                is DiscoveryResult.Success -> show(result.data, location != null, offline = false, append = append)
+                is DiscoveryResult.Offline -> result.cachedData?.let { show(it, location != null, offline = true, append = append) }
                     ?: showError(DiscoveryError.NetworkUnavailable)
-                is DiscoveryResult.Empty -> showEmpty(result.data, location != null)
+                is DiscoveryResult.Empty -> if (append) finishPagination() else showEmpty(result.data, location != null)
                 is DiscoveryResult.Error -> showError(result.reason)
             }
         }
     }
 
-    private fun show(content: MerchantSearchContent, hasLocation: Boolean, offline: Boolean) {
+    private fun show(content: MerchantSearchContent, hasLocation: Boolean, offline: Boolean, append: Boolean) {
         lastCategories = content.categories
+        currentPage = content.page
         val exploration = query.trim().isEmpty()
+        val previous = (_uiState.value as? SearchUiState.Content)?.data
+            ?: (_uiState.value as? SearchUiState.OfflineContent)?.data
+        val mapped = mapper.search(content, hasLocation)
         val data = SearchResultsUiModel(
             criteria = criteria(hasLocation),
-            merchants = mapper.search(content, hasLocation),
+            merchants = if (append) previous?.merchants.orEmpty() + mapped else mapped,
             totalResults = content.totalCount,
             resultContext = mapper.resultContext(content.totalCount, exploration),
             isRefreshing = false,
-            isExplorationMode = exploration
+            isExplorationMode = exploration,
+            hasMore = content.hasMore,
+            isLoadingMore = false
         )
         _uiState.value = if (offline) SearchUiState.OfflineContent(data) else SearchUiState.Content(data)
     }
@@ -158,14 +188,35 @@ class SearchViewModel @Inject constructor(
         }
     }
 
-    private fun criteria(hasLocation: Boolean = hasLocation()) = SearchCriteriaUiState(
+    private fun markLoadingMore() {
+        _uiState.value = when (val state = _uiState.value) {
+            is SearchUiState.Content -> state.copy(data = state.data.copy(isLoadingMore = true))
+            is SearchUiState.OfflineContent -> state.copy(data = state.data.copy(isLoadingMore = true))
+            else -> state
+        }
+    }
+
+    private fun finishPagination() {
+        _uiState.value = when (val state = _uiState.value) {
+            is SearchUiState.Content -> state.copy(data = state.data.copy(hasMore = false, isLoadingMore = false))
+            is SearchUiState.OfflineContent -> state.copy(data = state.data.copy(hasMore = false, isLoadingMore = false))
+            else -> state
+        }
+    }
+
+    private fun criteria(hasLocation: Boolean = hasLocation()): SearchCriteriaUiState {
+        val capabilities = sourcePolicy.capabilities
+        return SearchCriteriaUiState(
         query = query,
         filters = SearchFiltersUiModel(categoryId, onlyOpen, fulfillmentOptions),
         orderBy = orderBy,
         categories = mapper.categories(lastCategories),
-        sortOptions = mapper.sortOptions(hasLocation),
-        hasLocation = hasLocation
-    )
+        sortOptions = mapper.sortOptions(hasLocation, capabilities.supportedSorts),
+        hasLocation = hasLocation,
+        supportsOnlyOpen = capabilities.supportsOnlyOpen,
+        supportsFulfillmentFilter = capabilities.supportsFulfillmentFilter
+        )
+    }
 
     private fun persist() {
         savedStateHandle[SearchSavedStateKeys.QUERY] = query

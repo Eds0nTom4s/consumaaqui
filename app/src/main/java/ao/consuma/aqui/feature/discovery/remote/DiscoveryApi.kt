@@ -1,0 +1,30 @@
+package ao.consuma.aqui.feature.discovery.remote
+
+import retrofit2.Response
+import retrofit2.http.GET
+import retrofit2.http.Path
+import retrofit2.http.Query
+
+interface DiscoveryApi {
+    @GET("api/v1/discovery/home")
+    suspend fun home(
+        @Query("municipalityId") municipalityId: String? = null,
+        @Query("categoryId") categoryId: String? = null,
+        @Query("page") page: Int = 0,
+        @Query("pageSize") pageSize: Int = 20,
+        @Query("sort") sort: String = "NAME"
+    ): Response<DiscoveryHomeDto>
+
+    @GET("api/v1/discovery/search")
+    suspend fun search(
+        @Query("query") query: String = "",
+        @Query("categoryId") categoryId: String? = null,
+        @Query("municipalityId") municipalityId: String? = null,
+        @Query("page") page: Int = 0,
+        @Query("pageSize") pageSize: Int = 20,
+        @Query("sort") sort: String = "NAME"
+    ): Response<MerchantSearchDto>
+
+    @GET("api/v1/discovery/merchant/{merchantId}")
+    suspend fun merchant(@Path("merchantId") merchantId: String): Response<MerchantOverviewDto>
+}

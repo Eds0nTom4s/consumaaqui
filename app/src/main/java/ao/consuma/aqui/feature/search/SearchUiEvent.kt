@@ -7,6 +7,7 @@ sealed interface SearchUiEvent {
     data object Load : SearchUiEvent
     data object Retry : SearchUiEvent
     data object Refresh : SearchUiEvent
+    data object LoadNextPage : SearchUiEvent
     data object ClearFilters : SearchUiEvent
     data object ClearQuery : SearchUiEvent
     data class QueryChanged(val value: String) : SearchUiEvent
