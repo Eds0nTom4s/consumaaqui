@@ -1,0 +1,134 @@
+RELATÓRIO — ANDROID-DISCOVERY-CONTRACT-STATUS-SYNC-001
+=====================================================
+
+1. ESTADO INICIAL
+-----------------
+Repositório: Eds0nTom4s/consumaaqui
+Base: android/checkout-flow-mock-001
+SHA base: b8b6fffd048558e0c1cd688f5addac7d5fac18bb
+Branch: android/discovery-contract-status-sync-001
+Worktree isolado: /tmp/consumaaqui-discovery-contract-status-sync-001
+
+O worktree original estava em android/discovery-remote-001 e continha três artefactos não
+rastreados: docs/contracts/CONTRATO_API_CONSUMA_AQUI_ANDROID_V1.md, "nova sequencia" e
+"visao sobre mobilidade de cargas e transporte de consumidores consuma". Nenhum deles foi
+alterado, movido, staged ou publicado. A branch Discovery Remote preexistente não foi alterada.
+
+2. BACKEND CANÓNICO CONFIRMADO
+------------------------------
+Repositório: Eds0nTom4s/maspe-residencial
+Main: ac1b3ba5dc0b90d1509cc86f24a9f8e0404bdaba
+Merge: merge(backend): integra foundation e discovery canonica android
+Source: afe5ab210eabed601e1be24d8e8408079c1ab542
+Schema: 20260807.01
+Contrato: CONSUMA_AQUI_ANDROID_V1 1.0.0-rc.2
+
+Foram confirmados directamente na main backend o contract.json, o OpenAPI 3.1.0, os três
+handlers públicos, a identidade Tenant.merchantPublicId, as migrations da foundation e do
+opt-in Discovery, os testes contratuais e os testes HTTP/PostgreSQL. Os schemas, métodos,
+parâmetros, DTOs e erros do contract.json e OpenAPI correspondem à implementação. O metadata
+x-consuma-implementation-status do backend permaneceu pré-sync por decisão do merge anterior;
+esta fase não altera o backend e sincroniza o snapshot consumidor Android com a runtime main.
+
+O path de detalhe confirmado pelo Git é plural:
+GET /api/v1/discovery/merchants/{merchantId}
+O path singular /api/v1/discovery/merchant/{merchantId} não é canónico nem foi documentado.
+
+3. ESTADO DISCOVERY CONFIRMADO
+------------------------------
+Contrato | Estado anterior | Estado real backend | Estado actualizado Android
+Home | HISTORICAL_BRANCH_ONLY | IMPLEMENTED em ac1b3ba | IMPLEMENTED
+Search | HISTORICAL_BRANCH_ONLY | IMPLEMENTED em ac1b3ba | IMPLEMENTED
+Detail plural | HISTORICAL_BRANCH_ONLY | IMPLEMENTED em ac1b3ba | IMPLEMENTED
+
+Home é PUBLIC, retorna 200, usa envelope Android, cache público e ETag, sem IDs internos ou
+mocks runtime. Search é PUBLIC, zero-based, suporta NAME com desempate UUID e rejeita
+capabilities sem fonte. Detail usa merchantPublicId UUID, retorna 404 uniforme para merchant
+inexistente/não publicado e 400 INVALID_REQUEST para UUID inválido.
+
+4. CONTRATOS NÃO IMPLEMENTADOS
+------------------------------
+Contrato | Estado
+Catalog metadata/categories | NOT_IMPLEMENTED
+Product listing | NOT_IMPLEMENTED
+Product detail/options | NOT_IMPLEMENTED
+Product Options canónicas | NOT_IMPLEMENTED
+Checkout Quote | NOT_IMPLEMENTED
+Order Android creation | NOT_IMPLEMENTED
+Order Android query/access token | NOT_IMPLEMENTED
+
+catalogAvailable permanece apenas um indicador do merchant. Não constitui Catalog API.
+
+5. CAPABILITIES
+---------------
+Sort suportado: NAME.
+Sorts não suportados: FEATURED, NEAREST, TOP_RATED, MOST_POPULAR.
+Filtros não suportados: onlyOpen=true e fulfillmentOptions; resposta contratual
+CAPABILITY_NOT_SUPPORTED/SORT_NOT_SUPPORTED, sem fallback local ou remoto.
+Paginação: HTTP zero-based, default page=0, pageSize=20, máximo=100, desempate UUID público.
+Identidade externa: UUID v4 lowercase; PK Long, tenantId, businessAccountId, institutionId e
+unitId são proibidos no wire.
+Cache: Cache-Control public,max-age=60 + ETag. If-None-Match compatível retorna 304 sem body.
+Erros: AndroidPublicErrorEnvelope; INVALID_REQUEST, MERCHANT_NOT_FOUND, SORT_NOT_SUPPORTED,
+RATE_LIMITED, SERVICE_UNAVAILABLE e UNKNOWN conforme operação.
+Segurança: Discovery não exige JWT/Tenant. X-Tenant-Id, X-Tenant-Code e X-Business-Id são
+rejeitados. /tenant/** continua protegido; /tenant/produtos sem autenticação retorna 401.
+
+6. DÍVIDAS PRESERVADAS
+----------------------
+CG-09: aberto, seed PONTO sem turno; fora do escopo Discovery.
+CG-10: aberto, shutdown Ryuk/Hikari/MessageBroker; sem regressão funcional.
+D-05: UNRESOLVED_BLOCKING para fulfillment, quote e order; nenhum fallback de unidade.
+RATE_LIMIT_DISTRIBUTED_COORDINATION_PENDING: rate limit actual é funcional por instância;
+coordenação distribuída permanece evolução operacional não bloqueante para Discovery Remote.
+
+7. ALTERAÇÕES REALIZADAS
+------------------------
+docs/contracts/CONSUMA_AQUI_ANDROID_V1.contract.json
+- snapshot consumidor introduzido a partir do RC.2 congelado;
+- backendBaseCommit actualizado para ac1b3ba5dc0b90d1509cc86f24a9f8e0404bdaba;
+- backendSchema actualizado para 20260807.01;
+- apenas Home/Search/Detail promovidos para IMPLEMENTED/currentMain=IMPLEMENTED;
+- seis endpoints futuros preservados em NOT_IMPLEMENTED;
+- fontes NAME/MUNICIPALITY e migration de public IDs alinhadas à main.
+
+docs/reports/android/RELATORIO_ANDROID_DISCOVERY_CONTRACT_STATUS_SYNC_001.txt
+- evidência, matriz de estado, capabilities, dívidas e decisão desta fase.
+
+Código Android de produção, Gradle, AndroidManifest, DTOs, repositories, UI, ViewModels,
+backend, Retrofit e OkHttp: inalterados.
+
+8. VALIDAÇÕES
+-------------
+Comando | Resultado
+git fetch --all --prune | PASS; base Android exacta
+git/backend origin/main | PASS; ac1b3ba5dc0b90d1509cc86f24a9f8e0404bdaba
+contract.json Android pré-sync vs backend | byte-a-byte idênticos; SHA-256 8f85713a...
+OpenAPI/controller/backend | PASS; Home/Search/Detail plural confirmados
+jq JSON/status matrix | PASS; 3 IMPLEMENTED, 0 PARTIAL, 0 HISTORICAL_BRANCH_ONLY, 6 NOT_IMPLEMENTED
+contract capability/security assertions | PASS
+git diff --check | PASS
+ANDROID_HOME=/home/centraltec_admin/Android/Sdk ./gradlew testDebugUnitTest | PASS; 378 testes, 0 failures/errors/skipped
+
+9. COMMIT
+---------
+Mensagem: docs(android): sync discovery contract status with backend main
+SHA final: registado no HEAD da branch e na saída operacional; não existe commit funcional.
+Ficheiros: exactamente o snapshot contratual e este relatório.
+
+10. PUBLICAÇÃO
+--------------
+Branch: android/discovery-contract-status-sync-001
+Push: normal, sem force.
+SHA remoto, ahead/behind e limpeza: registados na saída operacional após publicação.
+
+11. VEREDICTO
+-------------
+CONTRACT STATUS SYNC CONCLUÍDO
+
+ANDROID DISCOVERY REMOTE:
+READY_TO_START
+
+Próxima fase autorizável após auditoria: ANDROID — DISCOVERY-REMOTE-001.
+Esta fase não iniciou network stack, DTOs, mappers, repository remoto, Hilt source selection,
+MockWebServer, Catalog, Quote, Order, UI ou qualquer alteração backend.
