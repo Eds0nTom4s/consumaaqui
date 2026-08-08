@@ -163,3 +163,96 @@ Implementação e validação contratual concluídas; runtime backend real e gat
 ## 16. Próximo passo
 
 Validar a mesma branch num dispositivo/emulador compatível e desbloqueado, configurar uma URL HTTPS do backend canónico e executar Home -> Search -> Merchant Detail real. Não iniciar Catalog antes desse fecho.
+
+## 17. FECHO DOS GATES — ANDROID-DISCOVERY-REMOTE-001-GATES-CLOSURE
+
+### 17.1 Bases e ambiente real
+
+- Android inicial: origin/android/discovery-remote-001 em ba8081279a89024b6a0a3baf8d2d637e254e0bd6.
+- Backend: main exacta ac1b3ba5dc0b90d1509cc86f24a9f8e0404bdaba, sem alteração de source ou commit.
+- PostgreSQL: instância 16 isolada, 88 migrations aplicadas, schema final 20260807.01.
+- Backend local: porta 18082, health/liveness/readiness UP.
+- Fixture controlada: criada por BusinessTemplateService e MerchantDiscoveryPublicationService num runner efémero externo à tree Git, sem SQL manual.
+- Merchant público: Tenant elegível, opt-in Discovery true, cardápio publicado, municipality Luanda e merchantPublicId UUID.
+- Merchant privado: opt-in Discovery false; permaneceu invisível e devolveu 404 MERCHANT_NOT_FOUND.
+- Dispositivo canónico: Samsung SM-S928U1, Android 16, API 36, arm64-v8a, USB state=device, owner deviceLocked=0.
+- Transporte: adb reverse tcp:18082 -> tcp:18082; URL Debug fornecida apenas pela propriedade DISCOVERY_DEBUG_BASE_URL e nunca versionada.
+- AVD: não usado como substituto de qualquer gate.
+
+### 17.2 Runtime Android -> backend real
+
+Uma prova instrumentada efémera, removida após a execução e nunca staged, usou o grafo real Hilt -> SelectableDiscoveryRepository -> RemoteDiscoveryRepository -> Retrofit/OkHttp no Samsung.
+
+| Operação | Resultado | Evidência |
+| --- | --- | --- |
+| Home | HTTP 200, Android Empty | GET /api/v1/discovery/home?municipality=Luanda&page=0&pageSize=20&sort=NAME |
+| Search | PASS | GET /api/v1/discovery/search; page Android 1 -> backend 0; NAME; Merchant público retornado |
+| Detail | PASS | GET /api/v1/discovery/merchants/{merchantPublicId}; UUID público; catalogAvailable=true |
+| Merchant privado | PASS | 404 MERCHANT_NOT_FOUND |
+| Invalid UUID | PASS | 400 INVALID_REQUEST / INVALID_UUID |
+| Unsupported sorts | PASS | FEATURED, NEAREST, TOP_RATED e MOST_POPULAR -> SORT_NOT_SUPPORTED |
+| Unsupported filters | PASS | onlyOpen e fulfillmentOptions -> CAPABILITY_NOT_SUPPORTED em fieldErrors |
+| Tenant override | PASS | X-Tenant-Id, X-Tenant-Code e X-Business-Id -> 400 INVALID_REQUEST |
+| Tenant endpoint | PASS | /tenant/produtos sem JWT -> 401 |
+
+O proxy de evidência mostrou somente User-Agent e headers HTTP normais. Authorization, X-Tenant-Id, X-Tenant-Code e X-Business-Id não foram enviados pelo Android. Não houve mock fallback, IDs internos ou PII.
+
+### 17.3 Divergência Home bloqueante
+
+O merchant público não aparece no Home. Isto não é causado pelo Android nem pela fixture: AndroidDiscoveryService.home da main canónica devolve explicitamente categories e as três sections vazias, sem consultar AndroidDiscoveryReadRepository. Search e Detail consultam a mesma fixture com sucesso.
+
+Classificação: HOME_DISCOVERY_SECTIONS_EMPTY_ON_CANONICAL_BACKEND_MAIN.
+
+Consequência: o critério desta operação “merchant controlado aparece em Home” não pode ser declarado PASS sem uma fase backend própria. O Android não substituiu Home por Search nem fabricou recommendation/nearby/featured.
+
+### 17.4 ETag e 304
+
+O comportamento anterior “304 sem representação -> ContractError” continua válido como protecção. Nesta operação foi acrescentada revalidação correcta quando existe representação em memória:
+
+- ETag é guardado apenas em memória por representação e parâmetros;
+- a repetição envia If-None-Match;
+- 304 sem body reutiliza a representação canónica;
+- não foi criado Room, cache persistente ou fallback mock.
+
+Home, Search e Detail foram exercitados no Samsung contra o backend real: primeira request 200+ETag; segunda request If-None-Match -> 304 sem body; resultado Android preservado sem erro.
+
+### 17.5 Falhas, retry e rate limit
+
+- Network failure físico: adb reverse removido; Remote retornou NetworkUnavailable e a source permaneceu REMOTE.
+- Recovery/retry: adb reverse restaurado; o mesmo grafo voltou a consumir Search/Detail com sucesso, sem fallback.
+- Timeout: preservado e coberto por MockWebServer, sem alterar timeouts produtivos.
+- Rate limit backend: AndroidDiscoveryHttpFoundationTest, 4 testes, 0 failures/errors; contrato 180/min/IP, 429 RATE_LIMITED e Retry-After.
+- Android 429: mapeamento por error.code coberto em RemoteDiscoveryRepositoryContractTest.
+- RATE_LIMIT_DISTRIBUTED_COORDINATION_PENDING permanece aberto.
+
+### 17.6 Gates finais
+
+| Comando/gate | Resultado | Quantidade/observação |
+| --- | --- | --- |
+| testDebugUnitTest | PASS | 399 testes; 0 failures/errors/skipped |
+| testStagingUnitTest | PASS | 399 testes; 0 failures/errors/skipped |
+| testReleaseUnitTest | PASS | 399 testes; 0 failures/errors/skipped |
+| RemoteDiscoveryRepositoryContractTest | PASS | 10 testes; inclui 429 e ETag/304 |
+| assembleDebug | PASS | URL local apenas por propriedade externa |
+| assembleStaging | PASS | REMOTE; cleartext proibido |
+| assembleRelease | PASS | REMOTE; cleartext proibido; HTTPS exigido |
+| lintDebug | PASS | 0 issues |
+| connectedDebugAndroidTest | PASS | 112 concluídos; 111 passed; 0 failures/errors; 1 skipped específico de Release em Debug |
+| git diff --check | PASS | zero whitespace errors |
+
+### 17.7 Escopo e dívidas
+
+- Alteração funcional estrita: DiscoveryApi, RemoteDiscoveryRepository e teste contratual para ETag/304.
+- Commit funcional: b7dade5 (fix(android): fecha gate runtime da discovery remote).
+- Backend, frontend web, Catalog, Product, Options, Cart, Checkout, Quote, Order, Payment, Fulfillment e QR: inalterados.
+- CG-09: ABERTO; foi reproduzido com o seed demo e não corrigido.
+- CG-10: ABERTO; não corrigido.
+- D-05: UNRESOLVED_BLOCKING para fulfillment/quote/order; Discovery não escolhe unidade.
+- HTTPS Staging/Release: PENDING_DEPLOYMENT_ENVIRONMENT; nenhum endpoint externo foi inventado.
+- Worktree original e artefactos protegidos: preservados.
+
+### 17.8 Veredicto actualizado
+
+DISCOVERY REMOTE PARCIAL — HOME_DISCOVERY_SECTIONS_EMPTY_ON_CANONICAL_BACKEND_MAIN
+
+Runtime Android real, instrumentação física, Search, Detail, erros, falha de rede, retry, rate limit e ETag/304 estão validados. O único gate funcional desta operação que permanece aberto é a apresentação do merchant publicável no Home, porque a implementação canónica backend retorna sections vazias por desenho actual. O gate HTTPS externo permanece separado como PENDING_DEPLOYMENT_ENVIRONMENT.
