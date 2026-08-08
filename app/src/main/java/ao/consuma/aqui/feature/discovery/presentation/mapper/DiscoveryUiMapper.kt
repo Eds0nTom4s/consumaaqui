@@ -34,7 +34,7 @@ open class DiscoveryUiMapper @Inject constructor() {
         name = value.name,
         shortDescription = value.shortDescription,
         fullDescription = value.fullDescription,
-        category = value.category.name,
+        category = value.category?.name.orEmpty(),
         hasBanner = value.bannerUrl != null,
         hasLogo = value.logoUrl != null,
         availabilityLabel = availability(value.availability).first,

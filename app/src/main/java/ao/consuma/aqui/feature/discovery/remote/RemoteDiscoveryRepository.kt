@@ -16,6 +16,7 @@ import ao.consuma.aqui.feature.discovery.domain.result.DiscoveryResult
 import java.io.IOException
 import java.net.SocketTimeoutException
 import java.time.DateTimeException
+import java.util.UUID
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -30,10 +31,13 @@ class RemoteDiscoveryRepository @Inject constructor(
     private val json: Json
 ) : DiscoveryRepository {
     override suspend fun home(request: HomeDiscoveryRequest): DiscoveryResult<HomeDiscoveryContent> {
-        val municipalityId = request.location?.id
+        if (request.selectedCategoryId != null) {
+            return DiscoveryResult.Error(DiscoveryError.UnsupportedCapability)
+        }
+        val municipality = request.location?.city?.takeIf(String::isNotBlank)
         return if (!request.query.isNullOrBlank()) {
             execute(
-                call = { apiProvider.get().search(request.query, request.selectedCategoryId, municipalityId, 0, DiscoveryPaging.DEFAULT_PAGE_SIZE, "NAME") },
+                call = { apiProvider.get().search(request.query, request.selectedCategoryId, municipality, 0, DiscoveryPaging.DEFAULT_PAGE_SIZE, "NAME") },
                 map = { dto ->
                     val search = mapper.search(dto)
                     HomeDiscoveryContent(
@@ -47,7 +51,7 @@ class RemoteDiscoveryRepository @Inject constructor(
             )
         } else {
             execute(
-                call = { apiProvider.get().home(municipalityId, request.selectedCategoryId, 0, DiscoveryPaging.DEFAULT_PAGE_SIZE, "NAME") },
+                call = { apiProvider.get().home(municipality, request.selectedCategoryId, 0, DiscoveryPaging.DEFAULT_PAGE_SIZE, "NAME") },
                 map = mapper::home,
                 empty = { it.nearby.items.isEmpty() && it.recommended.items.isEmpty() && it.featured.items.isEmpty() }
             )
@@ -56,7 +60,9 @@ class RemoteDiscoveryRepository @Inject constructor(
 
     override suspend fun search(request: DiscoverySearchRequest): DiscoveryResult<MerchantSearchContent> {
         if (request.orderBy != DiscoveryOrderBy.NAME) return DiscoveryResult.Error(DiscoveryError.UnsupportedSort)
-        if (request.onlyOpen || request.fulfillmentOptions.isNotEmpty()) return DiscoveryResult.Error(DiscoveryError.InvalidRequest)
+        if (request.categoryId != null || request.onlyOpen || request.fulfillmentOptions.isNotEmpty()) {
+            return DiscoveryResult.Error(DiscoveryError.UnsupportedCapability)
+        }
         if (request.page < 1 || request.pageSize !in 1..DiscoveryPaging.MAX_PAGE_SIZE) {
             return DiscoveryResult.Error(DiscoveryError.InvalidRequest)
         }
@@ -65,7 +71,7 @@ class RemoteDiscoveryRepository @Inject constructor(
                 apiProvider.get().search(
                     query = request.query,
                     categoryId = request.categoryId,
-                    municipalityId = request.location?.id,
+                    municipality = request.location?.city?.takeIf(String::isNotBlank),
                     page = DiscoveryPagingMapper.toBackend(request.page),
                     pageSize = request.pageSize,
                     sort = "NAME"
@@ -77,7 +83,7 @@ class RemoteDiscoveryRepository @Inject constructor(
     }
 
     override suspend fun merchant(request: MerchantRequest): DiscoveryResult<MerchantOverview> {
-        if (request.merchantId.isBlank()) return DiscoveryResult.Error(DiscoveryError.InvalidRequest)
+        if (!request.merchantId.isCanonicalUuid()) return DiscoveryResult.Error(DiscoveryError.InvalidRequest)
         return execute(
             call = { apiProvider.get().merchant(request.merchantId) },
             map = mapper::overview,
@@ -92,6 +98,7 @@ class RemoteDiscoveryRepository @Inject constructor(
     ): DiscoveryResult<Domain> {
         return try {
             val response = call()
+            if (response.code() == 304) return DiscoveryResult.Error(DiscoveryError.ContractError)
             if (!response.isSuccessful) return DiscoveryResult.Error(mapHttpError(response))
             val body = response.body() ?: return DiscoveryResult.Error(DiscoveryError.ContractError)
             val domain = map(body)
@@ -116,10 +123,14 @@ class RemoteDiscoveryRepository @Inject constructor(
 
     private fun mapHttpError(response: Response<*>): DiscoveryError {
         val code = response.errorBody()?.string()?.let { body ->
-            runCatching { json.decodeFromString<DiscoveryErrorDto>(body).code }.getOrNull()
+            runCatching { json.decodeFromString<AndroidPublicErrorEnvelopeDto>(body).error.code }.getOrNull()
         }
         return when (response.code()) {
-            400 -> if (code == "SORT_NOT_SUPPORTED") DiscoveryError.UnsupportedSort else DiscoveryError.InvalidRequest
+            400 -> when (code) {
+                "SORT_NOT_SUPPORTED" -> DiscoveryError.UnsupportedSort
+                "CAPABILITY_NOT_SUPPORTED" -> DiscoveryError.UnsupportedCapability
+                else -> DiscoveryError.InvalidRequest
+            }
             401 -> DiscoveryError.Unauthorized
             403 -> DiscoveryError.Forbidden
             404 -> DiscoveryError.NotFound
@@ -129,4 +140,8 @@ class RemoteDiscoveryRepository @Inject constructor(
             else -> DiscoveryError.Unknown
         }
     }
+
+    private fun String.isCanonicalUuid(): Boolean = runCatching {
+        UUID.fromString(this).toString() == lowercase()
+    }.getOrDefault(false)
 }

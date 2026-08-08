@@ -152,7 +152,10 @@ class InMemoryDiscoveryRepositoryTest {
         DiscoveryOrderBy.entries.forEach { order ->
             assertEquals(search(orderBy = order).map { it.id }, search(orderBy = order).map { it.id })
         }
-        assertEquals(DiscoveryFixtures.merchants.maxBy { it.popularity }.id, search(orderBy = DiscoveryOrderBy.MOST_POPULAR).first().id)
+        assertEquals(
+            DiscoveryFixtures.merchants.maxBy { it.popularity ?: Double.NEGATIVE_INFINITY }.id,
+            search(orderBy = DiscoveryOrderBy.MOST_POPULAR).first().id
+        )
         assertTrue(search(orderBy = DiscoveryOrderBy.FEATURED).takeWhile { it.isFeatured }.isNotEmpty())
     }
 
@@ -161,7 +164,7 @@ class InMemoryDiscoveryRepositoryTest {
             val overview = (repository.merchant(MerchantRequest(summary.id)) as DiscoveryResult.Success).data
             assertEquals(summary.id, overview.id)
             assertEquals(summary.name, overview.name)
-            assertEquals(summary.categoryId, overview.category.id)
+            assertEquals(summary.categoryId, overview.category?.id)
             assertEquals(summary.fulfillmentOptions, overview.fulfillmentOptions)
             assertEquals(summary.rating, overview.rating)
             assertEquals(summary.ratingCount, overview.ratingCount)

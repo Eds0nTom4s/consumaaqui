@@ -9,7 +9,6 @@ import java.io.IOException
 import java.util.concurrent.CancellationException
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
@@ -29,129 +28,125 @@ class RemoteDiscoveryRepositoryContractTest {
     @Before fun setUp() { server = MockWebServer().also { it.start() } }
     @After fun tearDown() { runCatching { server.shutdown() } }
 
-    @Test fun `home success maps sections optional fields unknown values and catalog availability`() = runBlocking {
+    @Test fun `home consumes canonical response and sends no identity override headers`() = runBlocking {
         server.enqueue(jsonResponse(HOME_JSON))
-        val result = repository().home(HomeDiscoveryRequest(null)) as DiscoveryResult.Success
-        val merchant = result.data.recommended.items.single()
-        assertEquals(DataSource.REMOTE, result.source)
-        assertEquals(MerchantAvailability.Unknown, merchant.availability)
-        assertEquals(setOf(FulfillmentOption.PICKUP), merchant.fulfillmentOptions)
-        assertTrue(merchant.catalogAvailable)
-        assertEquals("/api/v1/discovery/home?&page=0&pageSize=20&sort=NAME".replace("?&", "?"), server.takeRequest().path)
+        val result = repository().home(HomeDiscoveryRequest(null)) as DiscoveryResult.Empty
+        assertTrue(result.data!!.recommended.items.isEmpty())
+        val request = server.takeRequest()
+        assertEquals("/api/v1/discovery/home?page=0&pageSize=20&sort=NAME", request.path)
+        assertNull(request.getHeader("Authorization"))
+        assertNull(request.getHeader("X-Tenant-Id"))
+        assertNull(request.getHeader("X-Tenant-Code"))
+        assertNull(request.getHeader("X-Business-Id"))
     }
 
-    @Test fun `home query uses search endpoint rather than unsupported home parameter`() = runBlocking {
+    @Test fun `home query delegates to canonical search without fake fallback`() = runBlocking {
         server.enqueue(jsonResponse(SEARCH_JSON))
         val result = repository().home(HomeDiscoveryRequest(null, query = "café completo")) as DiscoveryResult.Success
-        assertEquals("cafe-orbita", result.data.recommended.items.single().id)
-        val request = server.takeRequest()
-        assertTrue(request.path!!.startsWith("/api/v1/discovery/search?"))
-        assertEquals("café completo", request.requestUrl!!.queryParameter("query"))
+        assertEquals(UUID, result.data.recommended.items.single().id)
+        assertEquals("café completo", server.takeRequest().requestUrl!!.queryParameter("query"))
     }
 
-    @Test fun `search sends exact supported query pagination and name sort`() = runBlocking {
+    @Test fun `search sends canonical municipality pagination and NAME sort`() = runBlocking {
         server.enqueue(jsonResponse(SEARCH_JSON))
-        val result = repository().search(DiscoverySearchRequest(
-            query = "café",
-            categoryId = "cafe",
-            orderBy = DiscoveryOrderBy.NAME,
-            page = 2,
-            pageSize = 10
-        )) as DiscoveryResult.Success
-        assertEquals(1, server.takeRequest().requestUrl!!.queryParameter("page")!!.toInt())
+        val result = repository().search(
+            DiscoverySearchRequest(
+                query = "café",
+                orderBy = DiscoveryOrderBy.NAME,
+                page = 2,
+                pageSize = 10,
+                location = ao.consuma.aqui.feature.discovery.domain.model.DiscoveryLocation("ignored-id", "Luanda", "", "Luanda")
+            )
+        ) as DiscoveryResult.Success
+        val url = server.takeRequest().requestUrl!!
+        assertEquals("1", url.queryParameter("page"))
+        assertEquals("Luanda", url.queryParameter("municipality"))
+        assertNull(url.queryParameter("municipalityId"))
         assertEquals(2, result.data.page)
-        assertTrue(result.data.hasMore)
     }
 
-    @Test fun `merchant success preserves catalogAvailable and optional omissions`() = runBlocking {
+    @Test fun `merchant uses plural UUID path and canonical detail`() = runBlocking {
         server.enqueue(jsonResponse(MERCHANT_JSON))
-        val result = repository().merchant(MerchantRequest("cafe-orbita")) as DiscoveryResult.Success
+        val result = repository().merchant(MerchantRequest(UUID)) as DiscoveryResult.Success
         assertTrue(result.data.catalogAvailable)
-        assertNull(result.data.contact)
-        assertEquals("/api/v1/discovery/merchant/cafe-orbita", server.takeRequest().path)
+        assertEquals(MerchantAvailability.Unknown, result.data.availability)
+        assertEquals("/api/v1/discovery/merchants/$UUID", server.takeRequest().path)
     }
 
-    @Test fun `empty search is explicit empty with arrays`() = runBlocking {
-        server.enqueue(jsonResponse(EMPTY_SEARCH_JSON))
-        val result = repository().search(DiscoverySearchRequest(orderBy = DiscoveryOrderBy.NAME))
-        assertTrue(result is DiscoveryResult.Empty)
-        assertTrue((result as DiscoveryResult.Empty).data!!.merchants.isEmpty())
-    }
-
-    @Test fun `unsupported sorts and filters never reach the network`() = runBlocking {
-        assertEquals(DiscoveryError.UnsupportedSort, (repository().search(DiscoverySearchRequest()) as DiscoveryResult.Error).reason)
-        assertEquals(DiscoveryError.InvalidRequest, (repository().search(DiscoverySearchRequest(orderBy = DiscoveryOrderBy.NAME, onlyOpen = true)) as DiscoveryResult.Error).reason)
-        assertEquals(DiscoveryError.InvalidRequest, (repository().search(DiscoverySearchRequest(orderBy = DiscoveryOrderBy.NAME, fulfillmentOptions = setOf(FulfillmentOption.PICKUP))) as DiscoveryResult.Error).reason)
+    @Test fun `invalid public merchant identity never reaches network`() = runBlocking {
+        assertEquals(DiscoveryError.InvalidRequest, (repository().merchant(MerchantRequest("42")) as DiscoveryResult.Error).reason)
+        assertEquals(DiscoveryError.InvalidRequest, (repository().merchant(MerchantRequest("merchant-slug")) as DiscoveryResult.Error).reason)
         assertEquals(0, server.requestCount)
     }
 
-    @Test fun `backend error contract maps all required statuses`() = runBlocking {
+    @Test fun `unsupported remote capabilities never fall back or reach network`() = runBlocking {
+        assertEquals(DiscoveryError.UnsupportedSort, (repository().search(DiscoverySearchRequest()) as DiscoveryResult.Error).reason)
+        assertEquals(DiscoveryError.UnsupportedCapability, (repository().search(DiscoverySearchRequest(orderBy = DiscoveryOrderBy.NAME, categoryId = UUID)) as DiscoveryResult.Error).reason)
+        assertEquals(DiscoveryError.UnsupportedCapability, (repository().search(DiscoverySearchRequest(orderBy = DiscoveryOrderBy.NAME, onlyOpen = true)) as DiscoveryResult.Error).reason)
+        assertEquals(DiscoveryError.UnsupportedCapability, (repository().search(DiscoverySearchRequest(orderBy = DiscoveryOrderBy.NAME, fulfillmentOptions = setOf(FulfillmentOption.PICKUP))) as DiscoveryResult.Error).reason)
+        assertEquals(0, server.requestCount)
+    }
+
+    @Test fun `canonical nested error envelope maps by code`() = runBlocking {
         val scenarios = listOf(
             400 to ("INVALID_REQUEST" to DiscoveryError.InvalidRequest),
             400 to ("SORT_NOT_SUPPORTED" to DiscoveryError.UnsupportedSort),
-            401 to ("UNKNOWN" to DiscoveryError.Unauthorized),
-            403 to ("UNKNOWN" to DiscoveryError.Forbidden),
-            404 to ("NOT_FOUND" to DiscoveryError.NotFound),
-            429 to ("UNKNOWN" to DiscoveryError.RateLimited),
+            400 to ("CAPABILITY_NOT_SUPPORTED" to DiscoveryError.UnsupportedCapability),
+            404 to ("MERCHANT_NOT_FOUND" to DiscoveryError.NotFound),
+            429 to ("RATE_LIMITED" to DiscoveryError.RateLimited),
             503 to ("SERVICE_UNAVAILABLE" to DiscoveryError.ServiceUnavailable),
-            500 to ("UNKNOWN" to DiscoveryError.Server)
+            500 to ("INTERNAL_ERROR" to DiscoveryError.Server)
         )
         scenarios.forEach { (status, expected) ->
-            server.enqueue(jsonResponse("""{"code":"${expected.first}"}""", status))
-            val result = repository().merchant(MerchantRequest("missing")) as DiscoveryResult.Error
+            server.enqueue(errorResponse(status, expected.first))
+            val result = repository().merchant(MerchantRequest(UUID)) as DiscoveryResult.Error
             assertEquals(expected.second, result.reason)
         }
     }
 
-    @Test fun `unknown JSON fields are ignored but incompatible JSON is contract error`() = runBlocking {
-        server.enqueue(jsonResponse(SEARCH_JSON.replace("\"hasMore\":true", "\"hasMore\":true,\"future\":{\"x\":1}")))
+    @Test fun `unknown fields are ignored malformed JSON and unbacked 304 are contract errors`() = runBlocking {
+        server.enqueue(jsonResponse(SEARCH_JSON.replace("\"hasMore\":false", "\"hasMore\":false,\"future\":{\"x\":1}")))
         assertTrue(repository().search(DiscoverySearchRequest(orderBy = DiscoveryOrderBy.NAME)) is DiscoveryResult.Success)
         server.enqueue(jsonResponse("""{"categories":[],"merchants":"wrong","page":0,"pageSize":20,"totalCount":0,"hasMore":false}"""))
         assertEquals(DiscoveryError.ContractError, (repository().search(DiscoverySearchRequest(orderBy = DiscoveryOrderBy.NAME)) as DiscoveryResult.Error).reason)
-        server.enqueue(jsonResponse(MERCHANT_JSON.replace(
-            "\"catalogAvailable\":true",
-            "\"schedule\":{\"openDays\":[\"MONDAY\"],\"opensAt\":\"invalid\",\"closesAt\":\"18:00:00\"},\"catalogAvailable\":true"
-        )))
-        assertEquals(DiscoveryError.ContractError, (repository().merchant(MerchantRequest("cafe-orbita")) as DiscoveryResult.Error).reason)
+        server.enqueue(MockResponse().setResponseCode(304))
+        assertEquals(DiscoveryError.ContractError, (repository().merchant(MerchantRequest(UUID)) as DiscoveryResult.Error).reason)
     }
 
-    @Test fun `timeout connectivity configuration and cancellation stay distinct`() = runBlocking {
+    @Test fun `timeout network configuration and cancellation stay distinct`() = runBlocking {
         server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE))
         val timeoutClient = OkHttpClient.Builder().readTimeout(100, TimeUnit.MILLISECONDS).callTimeout(150, TimeUnit.MILLISECONDS).build()
-        assertEquals(DiscoveryError.Timeout, (repository(timeoutClient).merchant(MerchantRequest("slow")) as DiscoveryResult.Error).reason)
-
-        val networkRepository = RemoteDiscoveryRepository(DiscoveryApiProvider { throw IOException("offline") }, DiscoveryDtoMapper(), json)
-        assertEquals(DiscoveryError.NetworkUnavailable, (networkRepository.merchant(MerchantRequest("offline")) as DiscoveryResult.Error).reason)
-
-        val configurationRepository = RemoteDiscoveryRepository(DiscoveryApiProvider { throw DiscoveryConfigurationException("missing") }, DiscoveryDtoMapper(), json)
-        assertEquals(DiscoveryError.ContractError, (configurationRepository.merchant(MerchantRequest("config")) as DiscoveryResult.Error).reason)
-
-        val cancellationRepository = RemoteDiscoveryRepository(DiscoveryApiProvider { throw CancellationException("cancel") }, DiscoveryDtoMapper(), json)
-        assertThrows(CancellationException::class.java) { runBlocking { cancellationRepository.merchant(MerchantRequest("cancel")) } }
+        assertEquals(DiscoveryError.Timeout, (repository(timeoutClient).merchant(MerchantRequest(UUID)) as DiscoveryResult.Error).reason)
+        val network = RemoteDiscoveryRepository(DiscoveryApiProvider { throw IOException("offline") }, DiscoveryDtoMapper(), json)
+        assertEquals(DiscoveryError.NetworkUnavailable, (network.merchant(MerchantRequest(UUID)) as DiscoveryResult.Error).reason)
+        val configuration = RemoteDiscoveryRepository(DiscoveryApiProvider { throw DiscoveryConfigurationException("missing") }, DiscoveryDtoMapper(), json)
+        assertEquals(DiscoveryError.ContractError, (configuration.merchant(MerchantRequest(UUID)) as DiscoveryResult.Error).reason)
+        val cancellation = RemoteDiscoveryRepository(DiscoveryApiProvider { throw CancellationException("cancel") }, DiscoveryDtoMapper(), json)
+        assertThrows(CancellationException::class.java) { runBlocking { cancellation.merchant(MerchantRequest(UUID)) } }
         Unit
     }
 
     private fun repository(client: OkHttpClient = DiscoveryNetworkFactory.client()): RemoteDiscoveryRepository {
-        val api = Retrofit.Builder()
-            .baseUrl(server.url("/"))
-            .client(client)
-            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
-            .build()
+        val api = Retrofit.Builder().baseUrl(server.url("/")).client(client)
+            .addConverterFactory(json.asConverterFactory("application/json".toMediaType())).build()
             .create(DiscoveryApi::class.java)
         return RemoteDiscoveryRepository(DiscoveryApiProvider { api }, DiscoveryDtoMapper(), json)
     }
 
-    private fun jsonResponse(body: String, code: Int = 200) = MockResponse()
-        .setResponseCode(code)
+    private fun jsonResponse(body: String, code: Int = 200) = MockResponse().setResponseCode(code)
         .setHeader("Content-Type", "application/json; charset=UTF-8")
-        .setHeader("Cache-Control", "no-store")
-        .setBody(body)
+        .setHeader("Cache-Control", "public,max-age=60").setHeader("ETag", "\"canonical\"").setBody(body)
 
-    companion object {
-        private const val SUMMARY = """{"id":"cafe-orbita","name":"Café Órbita","category":{"id":"cafe","name":"Cafés"},"availability":{"status":"FUTURE_STATUS"},"fulfillmentOptions":["PICKUP","FUTURE_MODE"],"catalogAvailable":true}"""
-        private const val HOME_JSON = """{"categories":[{"id":"cafe","name":"Cafés"}],"nearby":{"items":[],"hasMore":false},"recommended":{"items":[$SUMMARY],"hasMore":false},"featured":{"items":[],"hasMore":false}}"""
-        private const val SEARCH_JSON = """{"categories":[{"id":"cafe","name":"Cafés"}],"merchants":[$SUMMARY],"page":1,"pageSize":10,"totalCount":11,"hasMore":true}"""
-        private const val EMPTY_SEARCH_JSON = """{"categories":[],"merchants":[],"page":0,"pageSize":20,"totalCount":0,"hasMore":false}"""
-        private const val MERCHANT_JSON = """{"id":"cafe-orbita","name":"Café Órbita","category":{"id":"cafe","name":"Cafés"},"availability":{"status":"UNKNOWN"},"fulfillmentOptions":[],"catalogAvailable":true}"""
+    private fun errorResponse(status: Int, code: String) = jsonResponse(
+        """{"error":{"code":"$code","message":"public","retryable":false,"fieldErrors":[],"traceId":"trace-1"}}""",
+        status
+    )
+
+    private companion object {
+        const val UUID = "123e4567-e89b-42d3-a456-426614174000"
+        const val SUMMARY = """{"merchantId":"$UUID","name":"Café Órbita","availability":"UNKNOWN","fulfillmentOptions":[],"distanceMeters":null,"rating":null,"popularityScore":null,"featured":false,"catalogAvailable":true}"""
+        const val HOME_JSON = """{"categories":[],"nearby":{"items":[],"hasMore":false},"recommended":{"items":[],"hasMore":false},"featured":{"items":[],"hasMore":false}}"""
+        const val SEARCH_JSON = """{"categories":[],"merchants":[$SUMMARY],"page":1,"pageSize":10,"totalCount":1,"hasMore":false}"""
+        const val MERCHANT_JSON = """{"merchantId":"$UUID","name":"Café Órbita","availability":"UNKNOWN","fulfillmentOptions":[],"distanceMeters":null,"rating":null,"popularityScore":null,"featured":false,"catalogAvailable":true,"fullDescription":null,"weeklySchedule":null,"catalogId":null}"""
     }
 }

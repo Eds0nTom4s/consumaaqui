@@ -8,7 +8,7 @@ import retrofit2.http.Query
 interface DiscoveryApi {
     @GET("api/v1/discovery/home")
     suspend fun home(
-        @Query("municipalityId") municipalityId: String? = null,
+        @Query("municipality") municipality: String? = null,
         @Query("categoryId") categoryId: String? = null,
         @Query("page") page: Int = 0,
         @Query("pageSize") pageSize: Int = 20,
@@ -19,12 +19,12 @@ interface DiscoveryApi {
     suspend fun search(
         @Query("query") query: String = "",
         @Query("categoryId") categoryId: String? = null,
-        @Query("municipalityId") municipalityId: String? = null,
+        @Query("municipality") municipality: String? = null,
         @Query("page") page: Int = 0,
         @Query("pageSize") pageSize: Int = 20,
         @Query("sort") sort: String = "NAME"
     ): Response<MerchantSearchDto>
 
-    @GET("api/v1/discovery/merchant/{merchantId}")
+    @GET("api/v1/discovery/merchants/{merchantId}")
     suspend fun merchant(@Path("merchantId") merchantId: String): Response<MerchantOverviewDto>
 }

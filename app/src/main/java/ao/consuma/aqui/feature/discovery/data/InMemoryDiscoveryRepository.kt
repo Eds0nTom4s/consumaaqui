@@ -103,11 +103,11 @@ class InMemoryDiscoveryRepository @Inject constructor() :
                     .thenBy { it.id }
             )
             DiscoveryOrderBy.MOST_POPULAR -> sortedWith(
-                compareByDescending<MerchantSummary> { it.popularity }.thenBy { it.id }
+                compareByDescending<MerchantSummary> { it.popularity ?: Double.NEGATIVE_INFINITY }.thenBy { it.id }
             )
             DiscoveryOrderBy.FEATURED -> sortedWith(
                 compareByDescending<MerchantSummary> { it.isFeatured }
-                    .thenByDescending { it.popularity }
+                    .thenByDescending { it.popularity ?: Double.NEGATIVE_INFINITY }
                     .thenBy { it.id }
             )
             DiscoveryOrderBy.NAME -> sortedWith(

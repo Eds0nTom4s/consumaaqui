@@ -17,14 +17,14 @@ object DiscoveryFixtures {
     )
 
     val merchants = listOf(
-        MerchantSummary("sabor-maianga", "Sabor da Maianga", "restaurant", "Sabores angolanos preparados no dia", null, MerchantAvailability.Open, setOf(FulfillmentOption.DELIVERY, FulfillmentOption.PICKUP, FulfillmentOption.DINE_IN), 450, 25, 4.7, 125, 940, MoneyAmount(550000, "AOA"), PromotionSummary("almoco-local", "Menu do dia", "Selecção especial ao almoço", "DESTAQUE"), true, true),
-        MerchantSummary("doce-embondeiro", "Doce Embondeiro", "bakery", "Bolos, pão e pastelaria artesanal", "https://images.invalid/doce-embondeiro.jpg", MerchantAvailability.ClosingSoon(35), setOf(FulfillmentOption.PICKUP, FulfillmentOption.DELIVERY), 900, 20, 4.5, 82, 760, MoneyAmount(250000, "AOA"), null, true, true),
-        MerchantSummary("cafe-horizonte", "Café Horizonte", "drinks", "Café, sumos naturais e encontros tranquilos", null, MerchantAvailability.OpensAt(LocalTime.of(7, 30)), setOf(FulfillmentOption.DINE_IN, FulfillmentOption.PICKUP), 1250, 15, 4.3, 44, 530, null, null, false, true),
-        MerchantSummary("mercado-talatona", "Mercado Talatona", "market", "Mercearia e essenciais para casa", "https://images.invalid/mercado-talatona.jpg", MerchantAvailability.Open, setOf(FulfillmentOption.DELIVERY, FulfillmentOption.PICKUP), 2400, 35, 4.6, 210, 1000, MoneyAmount(1000000, "AOA"), PromotionSummary("cabaz-semana", "Cabaz da semana", null, "OPORTUNIDADE"), true, true),
-        MerchantSummary("servicos-viana", "Serviços Viana", "services", "Reparações e assistência ao domicílio", null, MerchantAvailability.Unknown, setOf(FulfillmentOption.SERVICE), 5100, null, null, null, 310, null, null, false, false),
-        MerchantSummary("cantinho-kilamba", "Cantinho do Kilamba", "restaurant", "Refeições familiares e grelhados", null, MerchantAvailability.Closed, setOf(FulfillmentOption.DINE_IN, FulfillmentOption.PICKUP), 7300, 40, 4.2, 61, 620, MoneyAmount(400000, "AOA"), null, false, true),
-        MerchantSummary("fonte-fresca", "Fonte Fresca", "drinks", "Água, sumos e bebidas para entrega", null, MerchantAvailability.Open, setOf(FulfillmentOption.DELIVERY), 1800, 18, null, null, 470, null, PromotionSummary("entrega-bairro", "Entrega no bairro", "Condições apresentadas pelo comerciante", null), false, true),
-        MerchantSummary("paes-mutamba", "Pães da Mutamba", "bakery", "Pão fresco e pequenos-almoços", null, MerchantAvailability.ClosingSoon(20), setOf(FulfillmentOption.PICKUP), 3200, 12, 4.8, 39, 680, null, null, false, true)
+        MerchantSummary("sabor-maianga", "Sabor da Maianga", "restaurant", "Sabores angolanos preparados no dia", null, MerchantAvailability.Open, setOf(FulfillmentOption.DELIVERY, FulfillmentOption.PICKUP, FulfillmentOption.DINE_IN), 450, 25, 4.7, 125, 940.0, MoneyAmount(550000, "AOA"), PromotionSummary("almoco-local", "Menu do dia", "Selecção especial ao almoço", "DESTAQUE"), true, true),
+        MerchantSummary("doce-embondeiro", "Doce Embondeiro", "bakery", "Bolos, pão e pastelaria artesanal", "https://images.invalid/doce-embondeiro.jpg", MerchantAvailability.ClosingSoon(35), setOf(FulfillmentOption.PICKUP, FulfillmentOption.DELIVERY), 900, 20, 4.5, 82, 760.0, MoneyAmount(250000, "AOA"), null, true, true),
+        MerchantSummary("cafe-horizonte", "Café Horizonte", "drinks", "Café, sumos naturais e encontros tranquilos", null, MerchantAvailability.OpensAt(LocalTime.of(7, 30)), setOf(FulfillmentOption.DINE_IN, FulfillmentOption.PICKUP), 1250, 15, 4.3, 44, 530.0, null, null, false, true),
+        MerchantSummary("mercado-talatona", "Mercado Talatona", "market", "Mercearia e essenciais para casa", "https://images.invalid/mercado-talatona.jpg", MerchantAvailability.Open, setOf(FulfillmentOption.DELIVERY, FulfillmentOption.PICKUP), 2400, 35, 4.6, 210, 1000.0, MoneyAmount(1000000, "AOA"), PromotionSummary("cabaz-semana", "Cabaz da semana", null, "OPORTUNIDADE"), true, true),
+        MerchantSummary("servicos-viana", "Serviços Viana", "services", "Reparações e assistência ao domicílio", null, MerchantAvailability.Unknown, setOf(FulfillmentOption.SERVICE), 5100, null, null, null, 310.0, null, null, false, false),
+        MerchantSummary("cantinho-kilamba", "Cantinho do Kilamba", "restaurant", "Refeições familiares e grelhados", null, MerchantAvailability.Closed, setOf(FulfillmentOption.DINE_IN, FulfillmentOption.PICKUP), 7300, 40, 4.2, 61, 620.0, MoneyAmount(400000, "AOA"), null, false, true),
+        MerchantSummary("fonte-fresca", "Fonte Fresca", "drinks", "Água, sumos e bebidas para entrega", null, MerchantAvailability.Open, setOf(FulfillmentOption.DELIVERY), 1800, 18, null, null, 470.0, null, PromotionSummary("entrega-bairro", "Entrega no bairro", "Condições apresentadas pelo comerciante", null), false, true),
+        MerchantSummary("paes-mutamba", "Pães da Mutamba", "bakery", "Pão fresco e pequenos-almoços", null, MerchantAvailability.ClosingSoon(20), setOf(FulfillmentOption.PICKUP), 3200, 12, 4.8, 39, 680.0, null, null, false, true)
     )
 
     fun home(items: List<MerchantSummary> = merchants, hasLocation: Boolean = true): HomeDiscoveryContent {
@@ -32,7 +32,7 @@ object DiscoveryFixtures {
         val discoveryCandidates = items.filterNot { it.isFeatured }
         val nearbyItems = if (hasLocation) discoveryCandidates.sortedBy { it.distanceMeters ?: Int.MAX_VALUE }.take(HOME_SECTION_SIZE) else emptyList()
         val recommendedItems = if (hasLocation) emptyList() else discoveryCandidates
-            .sortedByDescending { it.popularity }
+            .sortedByDescending { it.popularity ?: Double.NEGATIVE_INFINITY }
             .take(HOME_SECTION_SIZE)
         return HomeDiscoveryContent(
             categories = categories,

@@ -17,7 +17,7 @@ class DiscoveryFixturesConsistencyTest {
             val overview = DiscoveryFixtures.overview(summary)
             assertEquals(summary.id, overview.id)
             assertEquals(summary.name, overview.name)
-            assertEquals(summary.categoryId, overview.category.id)
+            assertEquals(summary.categoryId, overview.category?.id)
             assertEquals(summary.fulfillmentOptions, overview.fulfillmentOptions)
             assertEquals(summary.rating, overview.rating)
             assertEquals(summary.ratingCount, overview.ratingCount)
@@ -26,7 +26,7 @@ class DiscoveryFixturesConsistencyTest {
 
     @Test fun `numeric fixture values stay within domain limits`() {
         DiscoveryFixtures.merchants.forEach { merchant ->
-            assertTrue(merchant.popularity >= 0)
+            assertTrue(merchant.popularity != null && merchant.popularity >= 0)
             assertTrue(merchant.rating == null || merchant.rating in 0.0..5.0)
             assertTrue(merchant.ratingCount == null || merchant.ratingCount >= 0)
             assertTrue(merchant.distanceMeters == null || merchant.distanceMeters >= 0)

@@ -5,6 +5,7 @@ enum class DataSource { MEMORY, REMOTE, CACHE }
 sealed interface DiscoveryError {
     data object InvalidRequest : DiscoveryError
     data object UnsupportedSort : DiscoveryError
+    data object UnsupportedCapability : DiscoveryError
     data object NetworkUnavailable : DiscoveryError
     data object Timeout : DiscoveryError
     data object ContractError : DiscoveryError
