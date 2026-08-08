@@ -1,196 +1,165 @@
 # RELATÓRIO — ANDROID DISCOVERY-REMOTE-001
 
-## 1. Estado inicial
+## 1. Auditoria da branch preexistente
 
-- Repositório Android: Eds0nTom4s/consumaaqui.
-- Worktree original: /home/centraltec_admin/Documentos/consumaaqui.
-- Branch original preexistente: android/discovery-remote-001.
-- HEAD original e base aprovada: b8b6fffd048558e0c1cd688f5addac7d5fac18bb.
-- Base remota: origin/android/checkout-flow-mock-001 no mesmo SHA.
-- Alterações tracked/staged no original: nenhuma.
-- Ficheiros externos protegidos e preservados: "nova sequencia", "visao sobre mobilidade de cargas e transporte de consumidores consuma" e docs/contracts/CONTRATO_API_CONSUMA_AQUI_ANDROID_V1.md.
-- Bloqueio inicial: adb não listava dispositivo antes da reinicialização do servidor.
-- Bloqueio USB removido: adb kill-server/start-server detectou um Samsung SM-S928U1 autorizado em estado device.
-- Baseline instrumentada no worktree original: 110 testes, 109 aprovados, 0 falhas, 0 erros, 1 ignorado; BUILD SUCCESSFUL em 3m37s.
+- Repositório: Eds0nTom4s/consumaaqui.
+- Worktree original protegido: /home/centraltec_admin/Documentos/consumaaqui.
+- Branch local preexistente: android/discovery-remote-001 em b8b6fffd048558e0c1cd688f5addac7d5fac18bb.
+- Branch remota preexistente: origin/android/discovery-remote-001 em ac01b962a75db0ca727f23c6adb8e37177d4fb7f.
+- Upstream do worktree de execução: origin/android/discovery-remote-001.
+- Merge-base com Contract Status Sync: b8b6fffd048558e0c1cd688f5addac7d5fac18bb.
+- Ahead/behind remoto vs sync: sync 1; remote 3.
+- Commits remotos exclusivos preservados:
+  - 9e7cfda079b4e6cdf8afae8ab20b0e7de00e264a feat(android): integra discovery com backend remoto
+  - 1d1e788e1dddb030a6776c647be1d83778b90fad test(android): cobre discovery remoto e resiliencia
+  - ac01b962a75db0ca727f23c6adb8e37177d4fb7f docs(android): documenta discovery remoto
+- Diff preexistente: 36 ficheiros, 1304 inserções, 40 remoções.
+- Classificação: D — IMPLEMENTAÇÃO DIVERGENTE.
+- Trabalho válido preservado: stack HTTP, repository remoto, source selector, ambientes, Hilt, capabilities, testes e alterações mínimas de UI.
+- Divergências corrigidas sem reset/rebase/force: path singular, municipalityId, DTO histórico, envelope de erro flat e slug como merchant ID.
+- Contract Status Sync incorporado por merge explícito 8b55399342d2931b2662677eef5966eaad4e84a1, com parent 6b1b099783c3fc9124d5048d182750d96c20d3bb.
 - Worktree isolado: /home/centraltec_admin/Documentos/consumaaqui-discovery-remote-001-execution.
-- Branch auxiliar: android/discovery-remote-001-execution.
-- O novo worktree nasceu directamente de origin/android/checkout-flow-mock-001 no mesmo SHA, limpo. Os ficheiros não rastreados do original não participam do build e não foram copiados.
+- Os três artefactos não rastreados do original foram preservados e nunca copiados, staged ou publicados:
+  - nova sequencia
+  - visao sobre mobilidade de cargas e transporte de consumidores consuma
+  - docs/contracts/CONTRATO_API_CONSUMA_AQUI_ANDROID_V1.md
 
-Dispositivo físico USB:
-- Fabricante: Samsung.
-- Modelo: SM-S928U1.
-- Android: 16.
-- API: 36.
-- ABI: arm64-v8a.
-- Serial mascarado: R5CX...NNJX.
-- Estado adb: device.
-- Autorização RSA: aceite.
-- Compatibilidade: API 36 >= minSdk 26; targetSdk 36; compileSdk 36.
-- Emulador criado: NÃO.
+## 2. Bases canónicas
 
-## 2. Contrato backend confirmado
+- Android funcional: b8b6fffd048558e0c1cd688f5addac7d5fac18bb.
+- Contract Status Sync: 6b1b099783c3fc9124d5048d182750d96c20d3bb.
+- Backend main confirmado: ac1b3ba5dc0b90d1509cc86f24a9f8e0404bdaba.
+- Contrato: CONSUMA_AQUI_ANDROID_V1 1.0.0-rc.2, OpenAPI 3.1.0.
+- Discovery Home, Search e Detail: IMPLEMENTED no snapshot sincronizado.
+- Detail canónico: GET /api/v1/discovery/merchants/{merchantId}.
+- Identidade externa: merchantPublicId UUID; PK, tenantId e businessAccountId não atravessam a fronteira Android.
 
-- Repositório: Eds0nTom4s/maspe-residencial, clonado apenas para auditoria read-only em /tmp.
-- SHA hierarquicamente prioritário indicado na continuação: 813503ea0513a5e2761ecb7a092b0a9ff5cb5cb0 (main).
-- Resultado no SHA prioritário: não contém controllers, DTOs, testes nem endpoints Discovery.
-- Branch funcional Discovery auditada: origin/backend/discovery-api-001.
-- Commit funcional informado: 13a61ef890094f1d2b62b23b3a616179db0f2641.
-- Commit final auditado: b979d2ead1d6663af5955c55d54bdae6861832bc.
-- Context path backend: /api; porta padrão: 8080.
-- Endpoints efectivos no commit Discovery:
-  - GET /api/v1/discovery/home
-  - GET /api/v1/discovery/search
-  - GET /api/v1/discovery/merchant/{merchantId}
-- Autenticação: GETs públicos; nenhum JWT, tenant, utilizador, conta ou cookie é exigido/enviado.
-- Cache: Cache-Control: no-store em sucesso e erro.
-- Paginação: zero-based, page padrão 0, pageSize padrão 20, intervalo 1..100.
-- Sort: NAME é o único suportado. FEATURED, NEAREST, TOP_RATED e MOST_POPULAR retornam 400 SORT_NOT_SUPPORTED. Valores desconhecidos retornam 400 INVALID_REQUEST.
-- Filtros efectivos: query (apenas Search), categoryId, municipalityId e coordenadas em par. onlyOpen e fulfillmentOptions são rejeitados como parâmetros desconhecidos.
-- Home: categories, nearby, recommended e featured; cada secção contém items e hasMore. Nearby/featured permanecem vazios sem fonte real.
-- Search: categories, merchants, page, pageSize, totalCount e hasMore.
-- Merchant summary: id, name, category, availability, fulfillmentOptions, catalogAvailable e campos opcionais documentados.
-- Merchant detail: id, name, category, availability, fulfillmentOptions, catalogAvailable e campos opcionais de apresentação/contacto/horário.
-- Availability: OPEN, CLOSING_SOON, OPENS_AT, CLOSED e UNKNOWN; expansion futura é transportada como string.
-- Fulfillment: strings; valores desconhecidos podem ser ignorados pelo Android sem invalidar toda a resposta.
-- Erro efectivo: objecto flat com timestamp, status, error, code, message e path.
-- HTTP: 200 para vazio; 400 para request/sort; 404 para comerciante inexistente/não publicável; 503 para indisponibilidade; 500 UNKNOWN para falha inesperada.
-
-Divergências materiais:
-- O SHA backend prioritário 813503e não implementa Discovery; a implementação existe apenas em b979d2e, numa branch não integrada em main.
-- O Markdown propõe path plural /discovery/merchants/{merchantId} e cache público/ETag; o código funcional usa path singular /discovery/merchant/{merchantId} e no-store. O Android segue o código/testes backend.
-- O Markdown canónico possui ambições posteriores (filtros, cache e envelope uniforme) que não existem no commit funcional. O Android não anuncia nem simula essas capacidades.
-- As duas instâncias locais existentes nas portas 8080 e 8081 responderam 401 no path Discovery, confirmando que não executam a branch funcional pública.
-
-## 3. Implementação realizada
+## 3. Implementação
 
 - Stack única: Retrofit 2.11.0, OkHttp 4.12.0, Kotlin Serialization 1.7.3 e MockWebServer 4.12.0.
-- Versões centralizadas em gradle/libs.versions.toml; SDK, AGP, Gradle, Kotlin, Compose e Hilt não foram actualizados.
-- Permissão INTERNET adicionada.
-- Network factory central com JSON estrito, ignoreUnknownKeys, timeouts explícitos, sem retry automático e sem HTTP body logging.
-- DiscoveryApi cobre apenas os três GETs Discovery.
-- DTOs separados de domínio/UI para Home, Search, Merchant, resumo, paginação, disponibilidade, fulfillment, dinheiro e erro.
-- DiscoveryDtoMapper executa DTO -> Domain, trata nulls/listas vazias, UNKNOWN, fulfillment futuro, catalogAvailable e horário.
-- DiscoveryPagingMapper centraliza Android 1-based <-> backend 0-based e rejeita valores inválidos.
-- RemoteDiscoveryRepository mantém Retrofit fora de ViewModels/composables e nunca recorre a fixtures em falha.
-- SelectableDiscoveryRepository escolhe a fonte apenas pela política explícita de ambiente/desenvolvimento.
-- Hilt foi separado em módulos de repository, source policy e rede para permitir doubles instrumentados sem bindings ambíguos.
-- MerchantSummary passou a preservar catalogAvailable vindo da fonte; Merchant Overview continua a controlar a navegação para Catalog sem implementar Catalog Remote.
-- Search recebeu paginação incremental/Load More e mantém resultados ao atingir fim de lista.
-- Home com query usa o endpoint Search, pois Home remoto não aceita query; nenhum parâmetro inexistente é enviado.
+- Versões centralizadas no version catalog; AGP, Kotlin, Compose, Hilt e SDK não foram actualizados.
+- DiscoveryApi contém apenas Home, Search e Detail plurais.
+- DTOs reproduzem a resposta canónica: merchantId, availability string, fulfillmentOptions, distanceMeters, rating, popularityScore, featured, catalogAvailable e detalhe opcional.
+- AndroidPublicErrorEnvelope é desserializado pelo code canónico.
+- Mappers puros mantêm UNKNOWN, ignoram fulfillment futuro e não fabricam categoria, rating, popularidade, horário, endereço ou media.
+- RemoteDiscoveryRepository mapeia INVALID_REQUEST, SORT_NOT_SUPPORTED, CAPABILITY_NOT_SUPPORTED, MERCHANT_NOT_FOUND, RATE_LIMITED, 503, timeout, rede e contrato.
+- CancellationException é sempre relançada.
+- DiscoveryPagingMapper centraliza Android 1-based e backend 0-based.
+- SelectableDiscoveryRepository não contém fallback Remote para Mock.
+- Source selector é central, injectado e observável; ViewModels dependem apenas de DiscoveryRepository.
+- Hilt separa repository, source policy e rede sem expor Retrofit à UI.
+- catalogAvailable vem exclusivamente do backend; nenhuma Catalog API foi criada.
+- O cliente não envia Authorization nem X-Tenant-Id, X-Tenant-Code ou X-Business-Id.
+- Cache persistente não foi criado. Sem cache local validado, um 304 não acompanhado de representação é ContractError; o cliente não inventa body.
 
-Arquitectura Android auditada:
-1. Discovery estava integralmente em modo Mock.
-2. DiscoveryRepository já era uma abstracção pronta para Remote.
-3. Antes desta fase não havia separação/select explícito; agora Mock, Remote e selector estão separados.
-4. Antes todos os ambientes usavam InMemory; agora Debug inicia Mock seleccionável e Staging/Release usam Remote fixo.
-5. ViewModels, UiStates, UiModels, rotas, navegação e a maioria dos modelos de domínio foram preservados.
-6. Campos remotos mapeados explicitamente: categorias, secções, paginação, availability, fulfillment, rating, dinheiro, promoção, detalhe e catalogAvailable.
-7. Dívida não bloqueante de implementação: não existe URL/deployment Staging Discovery. Dívida bloqueante de integração real: backend Discovery não está integrado/deployado.
+## 4. Ambientes
 
-## 4. Política Mock e Remote
+| Ambiente | Discovery Source | Base URL | Logging | Cleartext |
+| --- | --- | --- | --- | --- |
+| Debug | MOCK por defeito, MOCK/REMOTE seleccionável | propriedade DISCOVERY_DEBUG_BASE_URL, vazia por defeito | sem body logging | permitido somente pelo manifest Debug |
+| Staging | REMOTE obrigatório | propriedade DISCOVERY_STAGING_BASE_URL, vazia por defeito | sem body logging | proibido |
+| Release | REMOTE obrigatório | propriedade DISCOVERY_RELEASE_BASE_URL, vazia por defeito | sem body logging | proibido; URL não-HTTPS rejeitada |
 
-- Debug: DISCOVERY_SOURCE=MOCK, selector visível nas ferramentas de desenvolvimento, Remote seleccionável explicitamente e base URL configurável por DISCOVERY_DEBUG_BASE_URL.
-- Staging: DISCOVERY_SOURCE=REMOTE fixo, selector desactivado, URL configurável por DISCOVERY_STAGING_BASE_URL, cleartext bloqueado.
-- Release: DISCOVERY_SOURCE=REMOTE fixo, selector desactivado, URL configurável por DISCOVERY_RELEASE_BASE_URL, HTTPS validado em runtime, cleartext bloqueado.
-- URL ausente produz ContractError; não foi inventado domínio ou IP.
-- Não existe fallback Remote -> Mock.
-- Mock permanece para previews, testes e desenvolvimento isolado explicitamente seleccionado.
+Nenhum localhost, 10.0.2.2, IP pessoal, segredo ou domínio inventado foi versionado. Uma URL real continua requisito de configuração para execução remota.
 
-## 5. Paginação, sort e filtros
+## 5. Contratos
 
-- Android 1 -> backend 0; Android N -> N-1; backend 0 -> Android 1.
-- Search envia page/pageSize via mapper central; próxima página agrega resultados e fim vazio preserva os já apresentados.
-- Remote anuncia somente NAME e a UI remove os restantes sorts.
-- Remote não apresenta/envia onlyOpen nem fulfillment filter.
-- Solicitação programática de sort/filtro remoto não suportado termina em UnsupportedSort/InvalidRequest antes da rede.
-- Mock preserva FEATURED, NAME, NEAREST, TOP_RATED, MOST_POPULAR, onlyOpen e fulfillment.
+| Endpoint | Estado | Testes |
+| --- | --- | --- |
+| GET /api/v1/discovery/home | integrado no Android | MockWebServer: path, vazio, campos desconhecidos, headers ausentes |
+| GET /api/v1/discovery/search | integrado no Android | MockWebServer: query, municipality, page, NAME, vazio, malformed JSON |
+| GET /api/v1/discovery/merchants/{merchantId} | integrado no Android | MockWebServer: UUID, path plural, 200, 400, 404, 429, 503 |
 
-## 6. Erros e resiliência
+Catalog, Products, Options, Quote e Order Android permanecem NOT_IMPLEMENTED. Esta fase não alterou Cart, Checkout, Payment, Fulfillment ou QR.
 
-- HTTP 400 INVALID_REQUEST -> InvalidRequest.
-- HTTP 400 SORT_NOT_SUPPORTED -> UnsupportedSort.
-- HTTP 401 -> Unauthorized.
-- HTTP 403 -> Forbidden.
-- HTTP 404 -> NotFound.
-- HTTP 429 -> RateLimited.
-- HTTP 503 -> ServiceUnavailable.
-- Outros 5xx -> Server.
-- IOException -> NetworkUnavailable.
-- SocketTimeoutException -> Timeout.
-- JSON incompatível, body ausente, configuração ausente ou mapping inválido -> ContractError.
-- CancellationException é relançada.
-- Retry repete a request actual; não troca a fonte de dados.
+## 6. Paginação e capabilities
 
-## 7. Segurança e privacidade
+- Android page 1 -> backend page 0; Android N -> backend N-1; resposta backend 0 -> Android 1.
+- pageSize: default 20, máximo 100.
+- Sort remoto suportado: NAME.
+- FEATURED, NEAREST, TOP_RATED e MOST_POPULAR: UnsupportedSort sem request ou fallback.
+- categoryId, onlyOpen e fulfillmentOptions: UnsupportedCapability na fonte remota; não há filtragem local fingida.
+- Municipality usa o nome/cidade canónico no parâmetro municipality; o ID local nunca é enviado como municipalityId.
+- catalogAvailable é transportado sem inferência e não promove Catalog API.
 
-- Release/Staging: usesCleartextTraffic=false; Release exige URL HTTPS.
-- Debug: cleartext permitido apenas pelo manifest Debug para desenvolvimento USB controlado.
-- Nenhum trust-all, hostname verifier permissivo, certificado permissivo, token, password ou endpoint pessoal foi introduzido.
-- Não são enviados JWT, tenantId, userId, accountId, cookies ou headers administrativos.
-- Não existe body logging nem logging de query completa/resposta/PII.
-- Base URLs são propriedades Gradle externas e vazias por padrão.
-- adb reverse: não utilizado; lista de reversos vazia.
-- Portas avaliadas: 8080 e 8081 no computador, ambas sem endpoint Discovery público funcional.
+## 7. Segurança
 
-## 8. Testes executados
+- INTERNET é a única nova permissão de rede.
+- Main/Staging/Release proíbem cleartext; Debug pode usá-lo apenas para desenvolvimento controlado.
+- Não há trust-all, HostnameVerifier permissivo ou bypass TLS.
+- Não há interceptor administrativo nem headers tenant.
+- Não há body logging nem retry automático/agressivo.
+- Merchant usa UUID público canónico; slug, Long e UUID não canónico são rejeitados antes da rede.
+- DTO não chega à Compose; Retrofit não chega ao ViewModel.
 
-| Comando | Resultado | Observações |
-|---|---|---|
-| ./gradlew testDebugUnitTest | PASS | 397 testes, 0 falhas/erros/ignorados |
-| ./gradlew testStagingUnitTest | PASS | 397 testes, 0 falhas/erros/ignorados |
-| ./gradlew testReleaseUnitTest | PASS | 397 testes, 0 falhas/erros/ignorados |
-| ./gradlew assembleDebug | PASS | APK Debug gerado |
-| ./gradlew assembleStaging | PASS | APK Staging gerado; Remote fixo |
-| ./gradlew assembleRelease | PASS | APK Release gerado; lintVital passou |
-| ./gradlew lintDebug | PASS | relatório app/build/reports/lint-results-debug.html |
-| ./gradlew :app:connectedDebugAndroidTest (baseline) | PASS | 110 testes; 109 pass; 1 skipped; 0 failures/errors |
-| ./gradlew :app:connectedDebugAndroidTest (final) | PASS | 111 testes; 110 pass; 1 skipped; 0 failures/errors; 179,788 s; Gradle 4m |
-| ./gradlew :app:installDebug | PASS | instalação oficial num dispositivo |
-| git diff --check | PASS | sem whitespace errors |
+## 8. Testes
 
-MockWebServer não usa internet real e cobre sucesso Home/Search/Merchant, vazio, paginação/query/sort, optional/unknown/empty, 400 codes, 401, 403, 404, 429, 500, 503, timeout, conectividade, JSON incompatível, horário inválido e cancelamento.
+| Comando | Resultado | Quantidade | Observações |
+| --- | --- | --- | --- |
+| ./gradlew testDebugUnitTest | PASS | 398 | 0 failures, 0 errors, 0 skipped |
+| ./gradlew testStagingUnitTest | PASS | 398 | 0 failures, 0 errors, 0 skipped |
+| ./gradlew testReleaseUnitTest | PASS | 398 | 0 failures, 0 errors, 0 skipped |
+| RemoteDiscoveryRepositoryContractTest | PASS | 9 | MockWebServer e error envelope canónico |
+| ./gradlew assembleDebug | PASS | 1 APK | sem URL real embutida |
+| ./gradlew assembleStaging | PASS | 1 APK | Remote obrigatório |
+| ./gradlew assembleRelease | PASS | 1 APK | Remote e HTTPS obrigatórios |
+| ./gradlew lintDebug | PASS | 0 issues | relatório XML sem issues |
+| git diff --check | PASS | 0 | sem whitespace errors |
 
-## 9. Validação manual
+## 9. Instrumentados
 
-- Ambiente: Debug no Samsung físico, fonte padrão Mock.
-- Instalação: :app:installDebug.
-- Arranque frio: MainActivity iniciou com Status ok em 532 ms; processo activo e Activity resumed.
-- Fluxos Mock, navegação, loading/empty/error/retry, rotação, dark theme e font scale foram exercitados pela suite instrumentada controlada.
-- Remote real: não validado manualmente porque nenhuma instância acessível executa b979d2e. Não foram apresentados fixtures como dados reais.
-- Backend acessível pelo dispositivo: NÃO para Discovery.
-- adb reverse utilizado: NÃO; nenhuma porta revertida.
-- Limitação: Home/Search/Merchant contra deployment real continuam bloqueados.
+- Suite descoberta: 111 testes.
+- Primeira tentativa sem dispositivo: bloqueada por No connected devices.
+- Dispositivo físico Samsung SM-S928U1, Android/API 36: bloqueado pelo keyguard (Bouncer); ComposeTimeoutException antes da asserção funcional.
+- AVD Pixel_7a API 36.1: execução iniciou, mas Espresso falhou transversalmente antes da aplicação com NoSuchMethodException: android.hardware.input.InputManager.getInstance.
+- Resultado: NÃO PASS. A suite compilou, empacotou e instalou, mas o ambiente API 36.1/Espresso não permitiu validação funcional.
+- Não foram alteradas dependências de teste ou código não relacionado para mascarar este bloqueio.
 
-## 10. Diff e commits
+## 10. Runtime real
 
-- Base: b8b6fffd048558e0c1cd688f5addac7d5fac18bb.
-- Commit funcional: 9e7cfda — feat(android): integra discovery com backend remoto.
-- Commit testes: 1d1e788 — test(android): cobre discovery remoto e resiliencia.
-- Commit documental: docs(android): documenta discovery remoto.
-- Staging foi selectivo; nenhum git add . ou git add -A foi usado.
-- Artefactos Gradle/APKs/relatórios, local.properties, contrato read-only e ficheiros externos não integram commits.
+- Backend canónico: ac1b3ba5dc0b90d1509cc86f24a9f8e0404bdaba.
+- Nenhuma URL Staging/Release real estava configurada no workspace.
+- As portas locais 8080/8081 não provaram executar o backend canónico.
+- Home/Search/Detail reais: NÃO EXECUTADOS contra instância canónica acessível.
+- Runtime validado contratualmente com MockWebServer; dados reais, ETag/304 de servidor e rate limit real permanecem pendentes.
+- Nenhum mock é usado como fallback quando REMOTE está activo.
 
-## 11. Riscos e pendências
+## 11. Diff
 
-Bloqueantes:
-- Integrar/deployar o backend Discovery b979d2e (ou descendente compatível) sobre a linha backend vigente.
-- Fornecer URL HTTPS real de Staging.
-- Validar Home, Search, Merchant, vazio, erro, retry e paginação contra esse deployment no Samsung.
+- Diff cumulativo da fase vs b8b6fff antes do commit documental: 41 ficheiros, 1596 inserções, 51 remoções.
+- Inclui os 36 ficheiros preexistentes preservados, o Contract Status Sync e o alinhamento canónico.
+- O alinhamento canónico alterou 14 ficheiros: 290 inserções e 297 remoções.
+- Escopo: Android Discovery, rede, ambiente, contracts/reports e testes.
+- Backend, frontend web, Catalog Remote, Cart Remote, Checkout Remote, Order, Payment e QR: inalterados.
 
-Não bloqueantes para a implementação controlada:
-- Base URL vazia produz erro de configuração recuperável até a propriedade externa ser definida.
-- O backend v1 ainda não possui fonte real para nearby, featured, rating, distância, popularidade, open-now ou fulfillment filter.
-- O selector Debug é process-local e volta ao default Mock ao reiniciar a aplicação.
+## 12. Commits
 
-Fora do escopo:
-- Catalog Remote, Cart Remote, Checkout Remote, Order, Payment, Fulfillment, QR, mobilidade, cache offline, autenticação e alterações backend.
+- 8b55399342d2931b2662677eef5966eaad4e84a1 merge(android): integrate discovery contract status sync
+- 0a7426d fix(android): align remote discovery with canonical backend
+- Commit documental: o commit que contém este relatório, mensagem docs(android): document remote discovery integration.
 
-## 12. Veredicto
+## 13. Publicação
 
-BLOQUEADA — integração real ponta a ponta indisponível porque o backend Discovery b979d2e não está integrado/deployado e as instâncias locais executam uma linha sem os endpoints públicos.
+- Branch de destino: android/discovery-remote-001.
+- Push: normal, sem force.
+- Estado remoto e SHA final devem ser confirmados após o commit documental.
+- Worktree original e os três artefactos locais permanecem inalterados.
 
-A implementação Android está funcionalmente concluída e validada com MockWebServer, testes JVM, builds, lint e dispositivo USB controlado; não é declarada integralmente concluída.
+## 14. Dívidas preservadas
 
-## 13. Próximo passo seguro
+- CG-09: aberto, seed PONTO sem turno; fora do escopo Android Discovery.
+- CG-10: aberto, shutdown Ryuk/Hikari/MessageBroker; sem regressão funcional desta fase.
+- D-05: UNRESOLVED_BLOCKING para fulfillment, quote e order; nenhum fallback de unidade foi criado.
+- RATE_LIMIT_DISTRIBUTED_COORDINATION_PENDING: preservado; Android mapeia RATE_LIMITED sem retry agressivo.
+- URL real Staging/Release: configuração operacional pendente.
+- Instrumentação API 36.1/Espresso: bloqueio ambiental pendente.
 
-Realizar deployment controlado e HTTPS da API Discovery b979d2e (ou contrato compatível), configurar DISCOVERY_STAGING_BASE_URL e repetir apenas a validação de integração real/gate manual no Samsung. Não iniciar Catalog Remote.
+## 15. Veredicto
+
+DISCOVERY REMOTE PARCIAL
+
+Implementação e validação contratual concluídas; runtime backend real e gate instrumentado permanecem pendentes. Não é permitido declarar integração integral enquanto esses dois gates não passarem.
+
+## 16. Próximo passo
+
+Validar a mesma branch num dispositivo/emulador compatível e desbloqueado, configurar uma URL HTTPS do backend canónico e executar Home -> Search -> Merchant Detail real. Não iniciar Catalog antes desse fecho.
