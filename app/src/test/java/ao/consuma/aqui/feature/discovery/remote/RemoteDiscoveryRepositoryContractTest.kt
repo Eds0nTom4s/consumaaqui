@@ -102,6 +102,13 @@ class RemoteDiscoveryRepositoryContractTest {
             val result = repository().merchant(MerchantRequest(UUID)) as DiscoveryResult.Error
             assertEquals(expected.second, result.reason)
         }
+
+        server.enqueue(jsonResponse(
+            """{"error":{"code":"INVALID_REQUEST","message":"invalid","retryable":false,"fieldErrors":[{"field":"/onlyOpen","code":"CAPABILITY_NOT_SUPPORTED","message":"unsupported"}],"traceId":"trace-1"}}""",
+            400
+        ))
+        val nestedCapability = repository().merchant(MerchantRequest(UUID)) as DiscoveryResult.Error
+        assertEquals(DiscoveryError.UnsupportedCapability, nestedCapability.reason)
     }
 
     @Test fun `unknown fields are ignored malformed JSON and unbacked 304 are contract errors`() = runBlocking {
@@ -111,6 +118,19 @@ class RemoteDiscoveryRepositoryContractTest {
         assertEquals(DiscoveryError.ContractError, (repository().search(DiscoverySearchRequest(orderBy = DiscoveryOrderBy.NAME)) as DiscoveryResult.Error).reason)
         server.enqueue(MockResponse().setResponseCode(304))
         assertEquals(DiscoveryError.ContractError, (repository().merchant(MerchantRequest(UUID)) as DiscoveryResult.Error).reason)
+    }
+
+    @Test fun `etag is replayed and backed 304 reuses the canonical in-memory representation`() = runBlocking {
+        val repository = repository()
+        server.enqueue(jsonResponse(MERCHANT_JSON))
+        val first = repository.merchant(MerchantRequest(UUID)) as DiscoveryResult.Success
+        assertEquals(UUID, first.data.id)
+        assertNull(server.takeRequest().getHeader("If-None-Match"))
+
+        server.enqueue(MockResponse().setResponseCode(304))
+        val second = repository.merchant(MerchantRequest(UUID)) as DiscoveryResult.Success
+        assertEquals(first.data, second.data)
+        assertEquals("\"canonical\"", server.takeRequest().getHeader("If-None-Match"))
     }
 
     @Test fun `timeout network configuration and cancellation stay distinct`() = runBlocking {

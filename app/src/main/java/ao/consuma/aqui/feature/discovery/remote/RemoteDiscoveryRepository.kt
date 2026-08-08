@@ -18,10 +18,14 @@ import java.net.SocketTimeoutException
 import java.time.DateTimeException
 import java.util.UUID
 import java.util.concurrent.CancellationException
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import retrofit2.Response
 
 @Singleton
@@ -30,6 +34,9 @@ class RemoteDiscoveryRepository @Inject constructor(
     private val mapper: DiscoveryDtoMapper,
     private val json: Json
 ) : DiscoveryRepository {
+    private data class CachedRepresentation(val etag: String, val body: Any)
+    private val representations = ConcurrentHashMap<String, CachedRepresentation>()
+
     override suspend fun home(request: HomeDiscoveryRequest): DiscoveryResult<HomeDiscoveryContent> {
         if (request.selectedCategoryId != null) {
             return DiscoveryResult.Error(DiscoveryError.UnsupportedCapability)
@@ -37,7 +44,8 @@ class RemoteDiscoveryRepository @Inject constructor(
         val municipality = request.location?.city?.takeIf(String::isNotBlank)
         return if (!request.query.isNullOrBlank()) {
             execute(
-                call = { apiProvider.get().search(request.query, request.selectedCategoryId, municipality, 0, DiscoveryPaging.DEFAULT_PAGE_SIZE, "NAME") },
+                cacheKey = "home-search|${request.query}|${request.selectedCategoryId}|$municipality|0|${DiscoveryPaging.DEFAULT_PAGE_SIZE}|NAME",
+                call = { etag -> apiProvider.get().search(request.query, request.selectedCategoryId, municipality, 0, DiscoveryPaging.DEFAULT_PAGE_SIZE, "NAME", etag) },
                 map = { dto ->
                     val search = mapper.search(dto)
                     HomeDiscoveryContent(
@@ -51,7 +59,8 @@ class RemoteDiscoveryRepository @Inject constructor(
             )
         } else {
             execute(
-                call = { apiProvider.get().home(municipality, request.selectedCategoryId, 0, DiscoveryPaging.DEFAULT_PAGE_SIZE, "NAME") },
+                cacheKey = "home|$municipality|${request.selectedCategoryId}|0|${DiscoveryPaging.DEFAULT_PAGE_SIZE}|NAME",
+                call = { etag -> apiProvider.get().home(municipality, request.selectedCategoryId, 0, DiscoveryPaging.DEFAULT_PAGE_SIZE, "NAME", etag) },
                 map = mapper::home,
                 empty = { it.nearby.items.isEmpty() && it.recommended.items.isEmpty() && it.featured.items.isEmpty() }
             )
@@ -67,14 +76,16 @@ class RemoteDiscoveryRepository @Inject constructor(
             return DiscoveryResult.Error(DiscoveryError.InvalidRequest)
         }
         return execute(
-            call = {
+            cacheKey = "search|${request.query}|${request.categoryId}|${request.location?.city}|${request.page}|${request.pageSize}|NAME",
+            call = { etag ->
                 apiProvider.get().search(
                     query = request.query,
                     categoryId = request.categoryId,
                     municipality = request.location?.city?.takeIf(String::isNotBlank),
                     page = DiscoveryPagingMapper.toBackend(request.page),
                     pageSize = request.pageSize,
-                    sort = "NAME"
+                    sort = "NAME",
+                    ifNoneMatch = etag
                 )
             },
             map = mapper::search,
@@ -85,22 +96,35 @@ class RemoteDiscoveryRepository @Inject constructor(
     override suspend fun merchant(request: MerchantRequest): DiscoveryResult<MerchantOverview> {
         if (!request.merchantId.isCanonicalUuid()) return DiscoveryResult.Error(DiscoveryError.InvalidRequest)
         return execute(
-            call = { apiProvider.get().merchant(request.merchantId) },
+            cacheKey = "merchant|${request.merchantId}",
+            call = { etag -> apiProvider.get().merchant(request.merchantId, etag) },
             map = mapper::overview,
             empty = { false }
         )
     }
 
     private suspend fun <Dto, Domain> execute(
-        call: suspend () -> Response<Dto>,
+        cacheKey: String,
+        call: suspend (String?) -> Response<Dto>,
         map: (Dto) -> Domain,
         empty: (Domain) -> Boolean
     ): DiscoveryResult<Domain> {
         return try {
-            val response = call()
-            if (response.code() == 304) return DiscoveryResult.Error(DiscoveryError.ContractError)
+            val cached = representations[cacheKey]
+            val response = call(cached?.etag)
+            if (response.code() == 304) {
+                @Suppress("UNCHECKED_CAST")
+                val cachedBody = cached?.body as? Dto
+                    ?: return DiscoveryResult.Error(DiscoveryError.ContractError)
+                val domain = map(cachedBody)
+                return if (empty(domain)) DiscoveryResult.Empty(domain)
+                else DiscoveryResult.Success(domain, DataSource.REMOTE)
+            }
             if (!response.isSuccessful) return DiscoveryResult.Error(mapHttpError(response))
             val body = response.body() ?: return DiscoveryResult.Error(DiscoveryError.ContractError)
+            response.headers()["ETag"]?.takeIf(String::isNotBlank)?.let { etag ->
+                representations[cacheKey] = CachedRepresentation(etag, body as Any)
+            }
             val domain = map(body)
             if (empty(domain)) DiscoveryResult.Empty(domain)
             else DiscoveryResult.Success(domain, DataSource.REMOTE)
@@ -122,13 +146,16 @@ class RemoteDiscoveryRepository @Inject constructor(
     }
 
     private fun mapHttpError(response: Response<*>): DiscoveryError {
-        val code = response.errorBody()?.string()?.let { body ->
-            runCatching { json.decodeFromString<AndroidPublicErrorEnvelopeDto>(body).error.code }.getOrNull()
+        val error = response.errorBody()?.string()?.let { body ->
+            runCatching { json.decodeFromString<AndroidPublicErrorEnvelopeDto>(body).error }.getOrNull()
         }
+        val fieldCodes = error?.fieldErrors.orEmpty().mapNotNull { field ->
+            (field as? JsonObject)?.get("code")?.jsonPrimitive?.contentOrNull
+        }.toSet()
         return when (response.code()) {
-            400 -> when (code) {
-                "SORT_NOT_SUPPORTED" -> DiscoveryError.UnsupportedSort
-                "CAPABILITY_NOT_SUPPORTED" -> DiscoveryError.UnsupportedCapability
+            400 -> when {
+                error?.code == "SORT_NOT_SUPPORTED" || "SORT_NOT_SUPPORTED" in fieldCodes -> DiscoveryError.UnsupportedSort
+                error?.code == "CAPABILITY_NOT_SUPPORTED" || "CAPABILITY_NOT_SUPPORTED" in fieldCodes -> DiscoveryError.UnsupportedCapability
                 else -> DiscoveryError.InvalidRequest
             }
             401 -> DiscoveryError.Unauthorized
